@@ -10,7 +10,7 @@ const Router = () => {
     return (
         <div>
            <Switch>
-            <Route path='/chat' component={chat}/>
+            <Route exact path='/chat' component={chat}/>
           </Switch>
         </div>
     )
