@@ -154,6 +154,8 @@ class Chat extends React.Component {
       isTyping: false,
       ShowEmojis: false,
       selected: false,
+      chatSelected: "SELECT A CHAT",
+      friends: []
     }
 this.submit = () => {
 
@@ -235,58 +237,50 @@ this.submit = () => {
     document.getElementById("message").value += chosenEmoji.emoji 
   }
   this.icons = () =>{
-    if(this.state.ShowEmojis == false){
-      this.setState({ShowEmojis: true})
-    }else{
+    if(this.state.ShowEmojis == false) return this.setState({ShowEmojis: true});
      this.setState({ShowEmojis: false})
-    }
+
   }
     this.aria = (e) => {
-    const role = document.querySelectorAll('[aria-selected="true"]')
-    role.forEach(role => {
-      role.setAttribute('aria-selected', false)
-    })
-    e.target.setAttribute('aria-selected', true)
-
+      const role = document.querySelectorAll('[aria-selected="true"]')
+      this.setState({chatSelected: `${e.target.getAttribute('name')}`})
+      role.forEach(role => {
+        role.setAttribute('aria-selected', false)
+      })
+      e.target.setAttribute('aria-selected', true)
+      console.log(e.target.getAttribute('name'))
     }
+
   }
  
   componentDidMount() {
     sessionStorage.setItem("user", "qxth")
-    Socket.emit("create", "General")
-    fetch('http://localhost:3000/api/chat', {
-      method: 'GET'
-    }).then(res => res.json())
-      .then(data => {
-	let json = data[0].ChatData
-	let i;
-	for(i = 0; i<json.length; i++){
- let img = document.createElement("img")
-    img.src= "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png"
-    img.width = "24"
-    img.height = "24"
-    img.style.borderRadius = "50%"
-    img.style.marginTop = "1%"
-    img.style.marginLeft = "1%"
-    img.style.marginRight = "6px"
-    
-    let node = document.createElement("LI")
-    let textnode = document.createTextNode(json[i].user)
-    let node2 = document.createElement("LI")
-    let textnode2 = document.createTextNode(json[i].message) 
-    node2.style.marginTop = "10px"
-    node2.style.marginLeft = "28px"
-
-    node.appendChild(img)
-    node.appendChild(textnode)
-    node2.appendChild(textnode2)
-    
-    document.getElementById("mensajes").appendChild(node)
-    document.getElementById("mensajes").appendChild(node2)
-
-	}
+   fetch('http://localhost:3000/api/friends')
+   .then(res => res.json())
+   .then(data => {
+    for(let i of data.friendsData){
+      const div = document.createElement("DIV"), p = document.createElement("P"),
+      img = document.createElement("img");
+      div.setAttribute("name", `${i.nickname}`)
+      div.setAttribute("aria-selected", this.state.selected)
+      div.setAttribute("role", "option")
+      div.setAttribute("class", `${this.props.classes.aria}`)
+      img.src= "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png"
+      img.width="30"
+      img.height="30"
+      img.style.borderRadius="50%"
+      p.style.marginLeft="15px"
+      p.innerText= `${i.nickname}`
+      this.setState({
+        friends: [...this.state.friends, {id:i.id, name: i.nickname, data:[{}] }]
       })
-
+      div.appendChild(img)
+      div.appendChild(p)
+      console.log(this.state.friends)
+      document.querySelector("#friends").appendChild(div)
+    }
+   })
+    
   }
 
 render(){
@@ -313,31 +307,18 @@ render(){
       <Typography variant="body1">Add Friends</Typography>
       </div>
       
-      <div role="region">
+      <div id="friends" onClick={this.aria} role="region">
 
-      <div onClick={this.aria} role="option" aria-selected={this.state.selected} className={classes.aria}>
+   
 
-        <img src="https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png" style={{borderRadius:"50%"}} width="30px" height="30px"/>
-        <Typography style={{marginLeft:"15px"}} variant="body1">Allison ❤️</Typography>
-      </div>
-         <div onClick={this.aria} role="option" aria-selected={this.state.selected} className={classes.aria}>
-
-        <img src="https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png" style={{borderRadius:"50%"}} width="30px" height="30px"/>
-        <Typography style={{marginLeft:"15px"}} variant="body1">Andrew</Typography>
-      </div>
-       <div onClick={this.aria} role="option" aria-selected={this.state.selected} className={classes.aria}>
-
-        <img src="https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png" style={{borderRadius:"50%"}} width="30px" height="30px"/>
-        <Typography style={{marginLeft:"15px"}} variant="body1">Mom</Typography>
-      </div>
       </div>
     </div>
 
     <div>
    <div className={classes.channel}>
 
-     <Typography variant="h6">Andrew</Typography>
-          <IconButton disabled="true" color="inherit" style={{color:"gray", display: "flex", alignSelf: "flex-end"}}>
+     <Typography variant="h6">{this.state.chatSelected}</Typography>
+          <IconButton color="inherit" style={{color:"gray", display: "flex", alignSelf: "flex-end"}}>
             <CallIcon style={{marginRight: 10}}/>
             <VideoCallIcon style={{marginRight: 10}}/>
           </IconButton>
@@ -366,8 +347,9 @@ render(){
 	    <InputAdornment position='start'>
 	    <IconButton
       color="inherit"
+      onClick={this.icons}
       >
-	    <InsertEmoticonIcon onClick={this.icons}/>
+	    <InsertEmoticonIcon/>
 	    </IconButton>
 	    </InputAdornment>
 	  ),
