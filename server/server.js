@@ -9,18 +9,24 @@ import devBundle from './devBundle'
 import chat from './routes/chat.routes'
 import http from 'http'
 import socketIo from 'socket.io'
+import permisoLogin from './auth/permisoLogin'
 import { query } from './base-datos/conexion'
+import authLogin from './auth/authLogin'
+import authVerify from './auth/authVerify'
 const app = express();
 devBundle.compile(app)
 app.set('port', 3000);
+app.use(permisoLogin.initialize());
+
 app.use(morgan('dev'));
-app.use(cors(
+/*app.use(cors(
 {
   origin: [
     'http://e6e4187872e9.ngrok.io/'
   ]
 }
 ))
+*/
 app.use(cookie())
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }))
@@ -30,6 +36,8 @@ const CURRENT_WORKING_DIR = process.cwd()
 app.use('/dist', express.static(path.join(CURRENT_WORKING_DIR, 'dist')))
 
 app.use('/', chat)
+app.use('/', authVerify)
+app.use('/', authLogin)
 
 app.get('*', (req, res) => {
   res.status(200).send(template())
@@ -46,44 +54,24 @@ const io = socketIo(server, {
 
 io.on("connection", (socket) => {
  let room;
+ let idFriend; 
 
  socket.on('create', (roomname) => {
-   room = roomname
-   socket.join(room)
-   console.log(socket.rooms)
+  room = roomname.room, idFriend= roomname.id
+  socket.join([room]);
+  console.log(roomname)
  })
 
- socket.on("message", (msg) => {
+ socket.on("message",async (msg) => {
    io.to(room).emit("message", msg);  
-   console.log(msg)
+      console.log(msg)
+      console.log(idFriend)
+      const data =`,{"user": "${msg.user}", "message": "${msg.message}", "date": "${new Date()}"}]}`
+      const parametros = [data, room]
+      const sql = `update ChatStorage set ChatData = concat(substring_index(ChatData, "]", 1), ?) WHERE idChat=?`
+      await query(sql, parametros)
 
-   const parametros = [room]
-   const sql = "SELECT idChat FROM ChatStorage WHERE ChatName = ?"
-   query(sql, parametros)
-   .then((rows) => {
-    if(rows.length){
-      const data =`,{"user": "${msg.user}", "message": "${msg.message}"}]}`
-      const parametros = [data]
-      const sql = `update ChatStorage set ChatData = concat(substring_index(ChatData, "]", 1), ?)`
 
-      query(sql, parametros)
-      .then((rows) => {
-	console.log(rows)
-      }).catch(e => console.error(e))
-
-    }else{
-      const date = new Date(); 
-      let data = {"ChatData": [msg]}
-      let string = JSON.stringify(data)
-      const parametros = [room, string, date]
-      const sql = "INSERT INTO ChatStorage (ChatName, ChatData, fecha) VALUES (?, ?, ?)"
-   	query(sql, parametros)
-   	.then((rows) => {
-	  console.log(rows)
-	}).catch(e => console.error(e))
-    }
-
-   })
    })
 
   socket.on("typing", (user) =>{

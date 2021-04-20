@@ -27,6 +27,8 @@ import VideoCallIcon from '@material-ui/icons/VideoCall';
 //#Extras
 import Picker from 'emoji-picker-react'
 
+//#Search Friends
+import Search from './searchFriends'
 
 const styles ={
   '@global': {
@@ -59,7 +61,8 @@ const styles ={
       color: "#c7cccf",
       margin: 5,
       marginLeft: 10 
-    }
+    },
+
   },
   input : {
     width: "76%",
@@ -78,7 +81,9 @@ const styles ={
   },
    mensajes: {
     listStyle: "none",
-    margin: 0,
+    margin: 30,
+    marginLeft: 0,
+    marginTop: 0,
     padding: 0,
     '& > li': {
       maxWidth: 800,
@@ -99,8 +104,9 @@ const styles ={
   Typ: {
    margin: 0,
    position: 'fixed',
-   bottom: 50,
-   left: 50,
+   bottom: 29,
+   left: 351,
+   color: "#c0bebe",
    right: 0,
   },
   icon: {
@@ -135,10 +141,18 @@ const styles ={
     color:"#9d9ea3",
     padding: 20,
     display: "flex",
-    "&:hover":{
+    '&[aria-selected="true"]':{
       color:"rgb(199, 204, 207)",
       background: "rgb(2,0,36)",
       background:"linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(1,0,10,0.6783088235294117) 0%, rgba(0,0,0,1) 100%, rgba(0,212,255,1) 100%)",
+      WebkitTransition: ".4s all ease-in-out",
+      MozTransition: ".4s all ease-in-out",
+      OTransition: ".4s all ease-in-out",
+      transition: ".4s all ease-in-out"
+    },
+    "&:hover":{
+      color:"rgb(199, 204, 207)",
+      background:"rgba(0, 0, 0, 0.04)",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -155,12 +169,14 @@ class Chat extends React.Component {
       ShowEmojis: false,
       selected: false,
       chatSelected: "SELECT A CHAT",
-      friends: []
+      friends: [],
+      canal: true,
+      user: null
     }
 this.submit = () => {
 
 
-    let val1 = sessionStorage.getItem("user")
+    let val1 = this.state.user
     let val2 = document.getElementById("message").value
 
     let data = {
@@ -196,6 +212,8 @@ this.submit = () => {
     
     document.getElementById("mensajes").appendChild(node)
     document.getElementById("mensajes").appendChild(node2)
+    const chatBox = document.querySelector(".Chat-boxMensajes-5")
+    chatBox.scrollTop = chatBox.scrollHeight 
    this.NoTyp()
   })
 
@@ -208,23 +226,30 @@ this.submit = () => {
   Socket.on("NoTyping", () => {
       document.getElementById("istyping").textContent = ''
   })
-
+  this.NoTypInterval = () => {
+    this.setState({isTyping: false})
+     Socket.emit("NoTyping")
+  }
+  Socket.on("NoTyping", () => {
+      document.getElementById("istyping").textContent = ''
+  })
   this.Typ = () => {
-    let val1 = sessionStorage.getItem("user")
+    let val1 = this.state.user
     if(document.getElementById("message").value != ''){ 
     this.setState({isTyping: true})
     Socket.emit("typing", val1)
-
+    console.log("typing")
+    setTimeout(this.NoTypInterval, 5000);
     }
-     }
+  }
   Socket.on("typing", (user) => {
-    let val = document.getElementById("message").value 
+    let val = this.state.user
       document.getElementById("istyping").textContent = `${user} esta escribiendo...`
   })
 
-    this.IsTyping = (e) => {
+  this.IsTyping = (e) => {
    
-    if (this.state.isTyping == false) {  
+    if (!this.state.isTyping) {  
     this.setState({isTyping: true})
       this.Typ()
     }else{
@@ -241,21 +266,62 @@ this.submit = () => {
      this.setState({ShowEmojis: false})
 
   }
-    this.aria = (e) => {
-      const role = document.querySelectorAll('[aria-selected="true"]')
-      this.setState({chatSelected: `${e.target.getAttribute('name')}`})
+  this.aria = (e) => {
+      const role = document.querySelectorAll('[aria-selected="true"]'), name = e.target.getAttribute('name');
+      this.setState({chatSelected: `${name}`})
       role.forEach(role => {
         role.setAttribute('aria-selected', false)
       })
       e.target.setAttribute('aria-selected', true)
-      console.log(e.target.getAttribute('name'))
-    }
+      const nameDB = this.state.friends.filter(e => e.name === name)
+      console.log(nameDB)
+      if(nameDB.length === 0) return this.setState({canal:false })
+        this.setState({canal:true })
+        fetch('/api/chat',{
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({id: nameDB[0].id})
+        })
+        .then(res => res.json())
+        .then(data => {
+          const mensajesDiv = document.getElementById("mensajes");
+          Socket.emit("create", {room: data.idChat, id: nameDB[0].id})
+          if(data.error) return mensajesDiv.innerHTML = ""
 
+          const json = data.dataChat.ChatData;
+          json.shift()
+          mensajesDiv.innerHTML = ""
+          for(let data of json){
+          let img = document.createElement("img")
+          img.src= "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png"
+          img.width = "24"
+          img.height = "24"
+          img.style.borderRadius = "50%"
+          img.style.marginTop = "1%"
+          img.style.marginLeft = "1%"
+          img.style.marginRight = "6px"
+          let node = document.createElement("LI")
+          let textnode = document.createTextNode(data.user)
+          let node2 = document.createElement("LI")
+          let textnode2 = document.createTextNode(data.message) 
+          node2.style.marginTop = "10px"
+          node2.style.marginLeft = "28px"
+
+          node.appendChild(img)
+          node.appendChild(textnode)
+          node2.appendChild(textnode2)
+
+          mensajesDiv.appendChild(node)
+          mensajesDiv.appendChild(node2)
+          const chatBox = document.querySelector(".Chat-boxMensajes-5")
+          chatBox.scrollTop = chatBox.scrollHeight 
+        }
+        })
   }
- 
-  componentDidMount() {
-    sessionStorage.setItem("user", "qxth")
-   fetch('http://localhost:3000/api/friends')
+  this.reloadChats = () => {
+   fetch('/api/friends')
    .then(res => res.json())
    .then(data => {
     for(let i of data.friendsData){
@@ -272,7 +338,7 @@ this.submit = () => {
       p.style.marginLeft="15px"
       p.innerText= `${i.nickname}`
       this.setState({
-        friends: [...this.state.friends, {id:i.id, name: i.nickname, data:[{}] }]
+        friends: [...this.state.friends, {id:i.id, name: i.nickname }]
       })
       div.appendChild(img)
       div.appendChild(p)
@@ -280,7 +346,19 @@ this.submit = () => {
       document.querySelector("#friends").appendChild(div)
     }
    })
-    
+  }
+
+  }
+ 
+  componentDidMount() {
+    fetch("/api/verificarToken", {
+      method: "GET"
+    }).then(res => res.json())
+    .then(data => {
+      console.log(data)
+      this.setState({user: data.data.nickname})
+    })
+    this.reloadChats() 
   }
 
 render(){
@@ -302,21 +380,20 @@ render(){
         <AccountCircle />
       </IconButton>
       </AppBar>
-      <div className={classes.tools}>
+
+      
+      <div id="friends" onClick={this.aria} role="region">
+      <div aria-selected={this.state.selected} className={classes.tools}>
       <PersonAddIcon size="small" style={{marginRight: 10}}/>
       <Typography variant="body1">Add Friends</Typography>
       </div>
-      
-      <div id="friends" onClick={this.aria} role="region">
-
-   
-
       </div>
     </div>
 
+   {this.state.canal ? 
     <div>
-   <div className={classes.channel}>
 
+   <div className={classes.channel}>
      <Typography variant="h6">{this.state.chatSelected}</Typography>
           <IconButton color="inherit" style={{color:"gray", display: "flex", alignSelf: "flex-end"}}>
             <CallIcon style={{marginRight: 10}}/>
@@ -330,7 +407,7 @@ render(){
 
     </div>
    { this.state.ShowEmojis ? <Picker onEmojiClick={this.onEmojiClick} pickerStyle={{bottom: '60px', position: 'fixed' }}/> :  <></> }
-      <Typography className={classes.Typ} variant="h1" id="istyping"></Typography>
+      <Typography className={classes.Typ} id="istyping"></Typography>
 
     <div className={classes.Typer}>  
 
@@ -340,7 +417,7 @@ render(){
     	autoComplete="off"
     	name="message"
     	placeholder="Envie un mensaje"
-    	onKeyPress={this.IsTyping}
+    	onKeyUp={this.IsTyping}
     	className={classes.input}
     	InputProps={{
 	  startAdornment: (
@@ -364,8 +441,10 @@ render(){
 	  ),
 	}}
       /> 
-      </div>
+      </div>      
        </div>
+     : <Search/>}
+
     </div>
   )
 }
