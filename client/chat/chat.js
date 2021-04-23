@@ -26,6 +26,7 @@ import VideoCallIcon from '@material-ui/icons/VideoCall';
 
 //#Extras
 import Picker from 'emoji-picker-react'
+import routesApi from '../../server/utils/routes-api'
 
 //#Search Friends
 import Search from './searchFriends'
@@ -277,7 +278,7 @@ this.submit = () => {
       console.log(nameDB)
       if(nameDB.length === 0) return this.setState({canal:false })
         this.setState({canal:true })
-        fetch('/api/chat',{
+        fetch(routesApi.getChat,{
           method: "POST",
           headers: {
             'Content-Type': 'application/json'
@@ -321,7 +322,7 @@ this.submit = () => {
         })
   }
   this.reloadChats = () => {
-   fetch('/api/friends')
+   fetch(routesApi.getAllFriends)
    .then(res => res.json())
    .then(data => {
     for(let i of data.friendsData){
@@ -351,7 +352,7 @@ this.submit = () => {
   }
  
   componentDidMount() {
-    fetch("/api/verificarToken", {
+    fetch(routesApi.verificarToken, {
       method: "GET"
     }).then(res => res.json())
     .then(data => {

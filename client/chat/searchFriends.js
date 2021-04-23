@@ -23,6 +23,7 @@ import {
 
 //#Extras
 import Picker from 'emoji-picker-react'
+import routesApi from './../../server/utils/routes-api'
 
 
 const styles ={
@@ -192,7 +193,7 @@ class SearchFriends extends React.Component {
       e.preventDefault()
       const friend = document.querySelector("#nickname").value
       console.log(friend)
-      fetch('/api/addfriends',{
+      fetch(`${routesApi.addFriends}`,{
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
@@ -217,7 +218,7 @@ class SearchFriends extends React.Component {
   this.accept = (e) => {
 
     const nameDB = this.state.stash.filter(t => t.name === e.target.getAttribute('name'))
-    fetch("/api/acceptfriends", {
+    fetch(`${routesApi.acceptFriends}`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
@@ -229,7 +230,7 @@ class SearchFriends extends React.Component {
     })
   }
   this.loadFriends = () => {
-     fetch('/api/stashfriends')
+     fetch(`${routesApi.stashFriends}`)
    .then(res => res.json())
    .then(data => {
     console.log(data)
@@ -277,7 +278,7 @@ class SearchFriends extends React.Component {
   this.cancel = (e) => {
     const nameDB = this.state.stash.filter(t => t.name === e.target.getAttribute('name'))
     console.log(nameDB)
-    fetch("/api/rejectfriends", {
+    fetch(`${routesApi.rejectFriends}`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json'

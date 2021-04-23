@@ -6,12 +6,12 @@ import {
   TextField, Container, Typography,
   List, ListItem, ListItemText,
   AppBar, InputAdornment, IconButton,
-  Divider, Button
+  Divider, Button, MenuItem, Select
 } from '@material-ui/core'
 import {withStyles} from '@material-ui/core/styles'
 
-//# Extras
-import routes from './../../server/utils/routes-api'
+//#Extras
+import routesApi from './../../server/utils/routes-api'
 
 const styles ={
   container: {
@@ -37,7 +37,7 @@ const styles ={
     marginBottom: "1rem"
   },
   formControl: {
-    background: "none",
+    background: "#1e2833",
     border: "none",
     borderBottom: "1px solid #434a52",
     borderRadius: "0",
@@ -45,7 +45,7 @@ const styles ={
     outline: "none",
     color: "inherit",
     display: "block",
-    width: "100%",
+    width: "92%",
     height: "calc(2.25rem + 2px)",
     padding: ".375rem .75rem",
     fontSize: "1rem",
@@ -104,39 +104,71 @@ const styles ={
   },
 }
 
-class Login extends React.Component {
+class Register extends React.Component {
   constructor(props){
     super(props)
-    this.state = {}
+    this.state = {
+      questions: []
+    }
     this.submit = (e) => {
     	e.preventDefault()
-        fetch(routes.iniciarSesion,{
+      const dc = document, pass = dc.querySelector("#pass").value,
+      passR = dc.querySelector("#passR").value;
+      if(pass !== passR) return alert("Passwords do not match");
+        fetch(routesApi.createUser,{
           method: "POST",
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-          	nickname: document.querySelector("#user").value,
-          	password: document.querySelector("#pass").value
+          	nickname: dc.querySelector("#user").value,
+          	password: pass,
+            pregunta: dc.querySelector("#question").value,
+            respuesta: dc.querySelector("#res").value
           })
-      	}).then(res => {
-          	if(res.status === 200) return alert("go to chat :)")
-          })	
+      	}).then(res => res.json())
+        .then(data => {
+          if(data.status == 401) return alert("User is busy")
+            return alert("Register successfully")
+        })	
     	}
 
+  }
+  componentDidMount(){
+    fetch(routesApi.getQuestions)
+    .then(res => res.json())
+    .then(data => {
+      this.setState({
+        questions: data.questions
+      })
+    })
   }
   render(){
     const {classes} = this.props;
 	return (
 		<div className={classes.container}>
 		<form className={classes.form} onSubmit={this.submit}>
-            <div className={classes.formGroup}><h2>Login</h2></div>
+            <div className={classes.formGroup}><h2>Register</h2></div>
             <div className={classes.formGroup}><input className={classes.formControl} type="text"  id="user" placeholder="Username"/></div>
             <div className={classes.formGroup}><input 
             className={classes.formControl} type="password" name="password" 
             id="pass" placeholder="Password"/></div>
+            <div className={classes.formGroup}><input 
+            className={classes.formControl} type="password" name="password" 
+            id="passR" placeholder="Repeat your password"/></div>
+            <div className={classes.formGroup}>
+            <select id="question" style={{width: "100%"}} className={classes.formControl}>
+              {this.state.questions.map((val) => (
+                <option value={val.value}>
+                  {val.name}
+                </option>
+              ))}
+            </select></div>
+            <div className={classes.formGroup}><input 
+            className={classes.formControl} type="text"
+            id="res" placeholder="Answer"/></div>            
             <div className={classes.formGroup}><button className={classes.btnPrimary} type="submit">Log In</button></div>
-            <a href="#" className={classes.forgot}>¿Forgot your password?</a>
+            <a href="#" className={classes.forgot}>¿You have an account?</a>
 		</form>
 		</div>
 	)  	
@@ -144,4 +176,4 @@ class Login extends React.Component {
 
 }
 
-export default hot(module)(withStyles(styles)(Login))
+export default hot(module)(withStyles(styles)(Register))

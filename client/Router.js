@@ -3,13 +3,15 @@ import {
     Route, Switch
 } from 'react-router-dom'
 import chat from './chat/chat';
-import login from './login/login'
-import notFound from './views/notFound'
+import login from './login/login';
+import notFound from './views/notFound';
+import register from './register/register';
+import routerApi from './../server/utils/routes-api'
 
 const Router = () => {
 	const [routes, setRoutes] = useState(false)
 	useEffect(() => {
-		fetch("/api/verificarToken", {
+		fetch(`${routerApi.verificarToken}`, {
 			method: "GET"
 		}).then(res => res.json())
 		.then(data => {
@@ -17,6 +19,7 @@ const Router = () => {
 			console.log(data)
 			console.log("======================")
 			console.log(routes)
+			console.log(routerApi)
 			if(data.data === false) {
 				return setRoutes(false)
 			}else{
@@ -28,14 +31,15 @@ const Router = () => {
 	const Routes = () => {
 		console.log(routes)
 		if(routes == true) return(
-			<>
+			<React.Fragment>
 				<Route exact path='/chat' component={chat}/>
-			</>
+			</React.Fragment>
 			);
 			return( 
-				<>
+				<React.Fragment>
 					<Route exact path='/login' component={login}/>
-				</>
+					<Route exact path='/register' component={register}/>
+				</React.Fragment>
 			)	
 
 	}

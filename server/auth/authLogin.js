@@ -1,12 +1,12 @@
 import express from 'express';
 import passport from 'passport';
 import jwt from 'jsonwebtoken';
-//import {secretKey} from '../../secret/keys';
+import routesApi from './../utils/routes-api'
+import keys from './../../secret/keys';
 
 const router = express.Router()
 
-
-router.route("/api/login")
+router.route(routesApi.iniciarSesion)
 .post((req, res, next) => {
 	passport.authenticate('local', {session: false},
 		(err, user, info) => {
@@ -15,7 +15,7 @@ router.route("/api/login")
 			console.log(info)
 			req.login(user, {session: false}, async (err) => {
 				if(err) return res.status(401).json({msg:"Asegurese de enviar correctamente sus datos"})
-				const token = jwt.sign(user, "secret")
+				const token = jwt.sign(user, keys.tokenKey)
 				res.cookie('jwt', token, {
 					secure: false,
 					httpOnly: false

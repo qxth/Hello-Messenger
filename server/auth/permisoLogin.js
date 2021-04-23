@@ -4,6 +4,8 @@ import passport from 'passport';
 import {Strategy as LocalStrategy} from 'passport-local'
 import {Strategy as JwtStrategy, ExtractJwt} from 'passport-jwt'
 import cookies from 'cookie-parser'
+import bcrypt from 'bcrypt';
+import keys from './../../secret/keys';
 
 const cookieToken = (req) => {
 	let token = null
@@ -24,15 +26,16 @@ passport.use(new LocalStrategy({
 		user.id = rows[0].id
 		user.nickname = username
 		console.log(user)
-		if(!rows[0].password == password) return done(null, false, {msg: "Usuario y/o contraseña incorrecta"});
+		if(!bcrypt.compareSync(password, rows[0].password)) return done(null, false, {msg: "Usuario y/o contraseña incorrecta"});
 
 		return done(null, user, console.log(user));
 
 	})
 }))
+
 const opts = {}
 opts.jwtFromRequest = ExtractJwt.fromExtractors([cookieToken]);
-opts.secretOrKey = 'secret';
+opts.secretOrKey = keys.tokenKey;
 
 passport.use(new JwtStrategy(opts, (payload, done) => {
 	console.log(payload)

@@ -12,6 +12,7 @@ import socketIo from 'socket.io'
 import permisoLogin from './auth/permisoLogin'
 import { query } from './base-datos/conexion'
 import authLogin from './auth/authLogin'
+import user from './routes/user.routes'
 import authVerify from './auth/authVerify'
 const app = express();
 devBundle.compile(app)
@@ -36,6 +37,7 @@ const CURRENT_WORKING_DIR = process.cwd()
 app.use('/dist', express.static(path.join(CURRENT_WORKING_DIR, 'dist')))
 
 app.use('/', chat)
+app.use('/', user)
 app.use('/', authVerify)
 app.use('/', authLogin)
 
