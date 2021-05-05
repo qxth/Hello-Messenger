@@ -65,7 +65,7 @@ const styles ={
       lineHeight: 1.5,
       transition:
         "color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out",
-      background: "#214a80",
+      backgroundColor: "#7289da",
       border: "none",
       borderRadius: "4px",
       padding: "11px",
@@ -77,11 +77,11 @@ const styles ={
       color:"white",
       width: "100%",
         "&:hover":{
-          background: "#214a80",
+          background: "#677bc4",
           outline: "none"
         },
         "&:active":{
-          background: "#214a80",
+          background: "#5b6eae",
           outline: "none",
           transform: "translateY(1px)"
         }
@@ -129,7 +129,7 @@ class Register extends React.Component {
       	}).then(res => res.json())
         .then(data => {
           if(data.status == 401) return alert("User is busy")
-            return alert("Register successfully")
+            return this.props.history.push("/login")
         })	
     	}
 
@@ -159,7 +159,7 @@ class Register extends React.Component {
             <div className={classes.formGroup}>
             <select id="question" style={{width: "100%"}} className={classes.formControl}>
               {this.state.questions.map((val) => (
-                <option value={val.value}>
+                <option key={val.name} value={val.value}>
                   {val.name}
                 </option>
               ))}
@@ -168,7 +168,7 @@ class Register extends React.Component {
             className={classes.formControl} type="text"
             id="res" placeholder="Answer"/></div>            
             <div className={classes.formGroup}><button className={classes.btnPrimary} type="submit">Log In</button></div>
-            <a href="#" className={classes.forgot}>¿You have an account?</a>
+            <a href="/login" className={classes.forgot}>¿You have an account?</a>
 		</form>
 		</div>
 	)  	

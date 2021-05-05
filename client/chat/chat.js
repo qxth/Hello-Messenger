@@ -15,17 +15,15 @@ import {
 import {withStyles} from '@material-ui/core/styles'
 
 //#Material UI/Icons
-import SendIcon from '@material-ui/icons/Send';
-import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 import MenuIcon from '@material-ui/icons/Menu';
 import AccountCircle from '@material-ui/icons/AccountCircle';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import PersonAddIcon from '@material-ui/icons/PersonAdd';
-import CallIcon from '@material-ui/icons/Call';
-import VideoCallIcon from '@material-ui/icons/VideoCall';
+
 
 //#Extras
-import Picker from 'emoji-picker-react'
+import Talk from './talkChat'
+import Menu from './menuHome'
 import routesApi from '../../server/utils/routes-api'
 
 //#Search Friends
@@ -53,63 +51,6 @@ const styles ={
      backgroundSize: 'cover',
      backgroundPosition: 'center center',
    },
-  channel: {
-    display: "flex",
-    border: '1px solid #3c4144',
-    boxShadow: "0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%)",
-    justifyContent: "space-between",
-    '& > h6': {
-      color: "#c7cccf",
-      margin: 5,
-      marginLeft: 10 
-    },
-
-  },
-  input : {
-    width: "76%",
-    position: "fixed",
-    backgroundColor: 'transparent',
-    borderColor: "none",
-    border: "1px solid #3c4144",
-    '& > div': {
-      border: "1px solid #3c4144",
-      backgroundColor: 'transparent',
-      color: '#a3a8ac',
-    },
-    '& .MuiInput-underline:after':{
-      borderBottom: 0
-    }
-  },
-   mensajes: {
-    listStyle: "none",
-    margin: 30,
-    marginLeft: 0,
-    marginTop: 0,
-    padding: 0,
-    '& > li': {
-      maxWidth: 800,
-      maxHeight: 200,
-      color: "#c7cccf",
-      padding: 0,
-      overflowY: "auto"
-    },
-   },
-  boxMensajes: {
-   border: "2px solid #3c4144",
-   minHeight: "88%",
-   maxHeight: 500,
-   overflowY: "auto",
-   borderBottom: 1,
-   borderTop: 1,
-  },
-  Typ: {
-   margin: 0,
-   position: 'fixed',
-   bottom: 29,
-   left: 351,
-   color: "#c0bebe",
-   right: 0,
-  },
   icon: {
     borderRadius: "50%",
     marginTop: "2%",
@@ -153,7 +94,6 @@ const styles ={
     },
     "&:hover":{
       color:"rgb(199, 204, 207)",
-      background:"rgba(0, 0, 0, 0.04)",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -167,105 +107,23 @@ class Chat extends React.Component {
     super(props)
     this.state = {
       isTyping: false,
-      ShowEmojis: false,
       selected: false,
-      chatSelected: "SELECT A CHAT",
+      chatSelected: false,
       friends: [],
       canal: true,
       user: null
     }
-this.submit = () => {
-
-
-    let val1 = this.state.user
-    let val2 = document.getElementById("message").value
-
-    let data = {
-      user: val1,
-      message: val2
-    }
-    document.getElementById("message").value = ''
-
-    Socket.emit("message", data)
-  }
-
-
-  Socket.on("message", (msg) => {
-    let img = document.createElement("img")
-    img.src= "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png"
-    img.width = "24"
-    img.height = "24"
-    img.style.borderRadius = "50%"
-    img.style.marginTop = "1%"
-    img.style.marginLeft = "1%"
-    img.style.marginRight = "6px"
-    
-    let node = document.createElement("LI")
-    let textnode = document.createTextNode(`${msg.user}`)
-    let node2 = document.createElement("LI")
-    let textnode2 = document.createTextNode(`${msg.message}`) 
-    node2.style.marginTop = "9px"
-    node2.style.marginLeft = "30px"
-
-    node.appendChild(img)
-    node.appendChild(textnode)
-    node2.appendChild(textnode2)
-    
-    document.getElementById("mensajes").appendChild(node)
-    document.getElementById("mensajes").appendChild(node2)
-    const chatBox = document.querySelector(".Chat-boxMensajes-5")
-    chatBox.scrollTop = chatBox.scrollHeight 
-   this.NoTyp()
-  })
-
- this.NoTyp = () => {
-    if(document.getElementById("message").value === ''){
-    this.setState({isTyping: false})
-     Socket.emit("NoTyping")
-    }
-  }
-  Socket.on("NoTyping", () => {
-      document.getElementById("istyping").textContent = ''
-  })
-  this.NoTypInterval = () => {
-    this.setState({isTyping: false})
-     Socket.emit("NoTyping")
-  }
-  Socket.on("NoTyping", () => {
-      document.getElementById("istyping").textContent = ''
-  })
-  this.Typ = () => {
-    let val1 = this.state.user
-    if(document.getElementById("message").value != ''){ 
-    this.setState({isTyping: true})
-    Socket.emit("typing", val1)
-    console.log("typing")
-    setTimeout(this.NoTypInterval, 5000);
-    }
-  }
-  Socket.on("typing", (user) => {
-    let val = this.state.user
-      document.getElementById("istyping").textContent = `${user} esta escribiendo...`
-  })
-
-  this.IsTyping = (e) => {
-   
-    if (!this.state.isTyping) {  
-    this.setState({isTyping: true})
-      this.Typ()
-    }else{
-      this.NoTyp()
-    }
-  }
- this.onEmojiClick = (e, emojiObject) => {
-    let chosenEmoji = null
-    chosenEmoji = emojiObject
-    document.getElementById("message").value += chosenEmoji.emoji 
-  }
-  this.icons = () =>{
-    if(this.state.ShowEmojis == false) return this.setState({ShowEmojis: true});
-     this.setState({ShowEmojis: false})
-
+  this.menuChat = () => {
+   if(!this.state.chatSelected) return(
+    <React.Fragment>
+      <Menu/>
+    </React.Fragment>
+    )
+    return(
+      <React.Fragment>
+      <Talk chatSelected={this.state.chatSelected} user={this.state.user}/>
+      </React.Fragment>
+    )
   }
   this.aria = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'), name = e.target.getAttribute('name');
@@ -316,8 +174,6 @@ this.submit = () => {
 
           mensajesDiv.appendChild(node)
           mensajesDiv.appendChild(node2)
-          const chatBox = document.querySelector(".Chat-boxMensajes-5")
-          chatBox.scrollTop = chatBox.scrollHeight 
         }
         })
   }
@@ -391,60 +247,7 @@ render(){
       </div>
     </div>
 
-   {this.state.canal ? 
-    <div>
-
-   <div className={classes.channel}>
-     <Typography variant="h6">{this.state.chatSelected}</Typography>
-          <IconButton color="inherit" style={{color:"gray", display: "flex", alignSelf: "flex-end"}}>
-            <CallIcon style={{marginRight: 10}}/>
-            <VideoCallIcon style={{marginRight: 10}}/>
-          </IconButton>
-    </div>
-    <div className={classes.boxMensajes}> 
-    <ul className={classes.mensajes} id="mensajes">
-    	
-    </ul>
-
-    </div>
-   { this.state.ShowEmojis ? <Picker onEmojiClick={this.onEmojiClick} pickerStyle={{bottom: '60px', position: 'fixed' }}/> :  <></> }
-      <Typography className={classes.Typ} id="istyping"></Typography>
-
-    <div className={classes.Typer}>  
-
-        <TextField
-    	type="text"
-    	id="message"
-    	autoComplete="off"
-    	name="message"
-    	placeholder="Envie un mensaje"
-    	onKeyUp={this.IsTyping}
-    	className={classes.input}
-    	InputProps={{
-	  startAdornment: (
-	    <InputAdornment position='start'>
-	    <IconButton
-      color="inherit"
-      onClick={this.icons}
-      >
-	    <InsertEmoticonIcon/>
-	    </IconButton>
-	    </InputAdornment>
-	  ),
-	  endAdornment: (
-	    <InputAdornment position='end'>
-	    <IconButton 
-      color="inherit"
-      onClick={this.submit}>
-	    	<SendIcon />
-	    </IconButton>
-	    </InputAdornment>
-	  ),
-	}}
-      /> 
-      </div>      
-       </div>
-     : <Search/>}
+   {this.state.canal ? <this.menuChat/> : <Search reloadChats={this.reloadChats}/>}
 
     </div>
   )

@@ -65,7 +65,7 @@ const styles ={
       lineHeight: 1.5,
       transition:
         "color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out",
-      background: "#214a80",
+      backgroundColor: "#7289da",
       border: "none",
       borderRadius: "4px",
       padding: "11px",
@@ -77,11 +77,11 @@ const styles ={
       color:"white",
       width: "100%",
         "&:hover":{
-          background: "#214a80",
+          background: "#677bc4",
           outline: "none"
         },
         "&:active":{
-          background: "#214a80",
+          background: "#5b6eae",
           outline: "none",
           transform: "translateY(1px)"
         }
@@ -120,7 +120,8 @@ class Login extends React.Component {
           	password: document.querySelector("#pass").value
           })
       	}).then(res => {
-          	if(res.status === 200) return alert("go to chat :)")
+          	if(res.status === 200) return this.props.history.push("/chat")
+              return alert("Ha ocurrido un error!")
           })	
     	}
 
@@ -137,6 +138,8 @@ class Login extends React.Component {
             id="pass" placeholder="Password"/></div>
             <div className={classes.formGroup}><button className={classes.btnPrimary} type="submit">Log In</button></div>
             <a href="#" className={classes.forgot}>¿Forgot your password?</a>
+            <p className={classes.forgot}>or</p>
+            <a href="/register" className={classes.forgot}>¿Don't have an account?</a>
 		</form>
 		</div>
 	)  	

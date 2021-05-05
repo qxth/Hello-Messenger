@@ -191,14 +191,14 @@ class SearchFriends extends React.Component {
     }
     this.searchFriends = (e) => {
       e.preventDefault()
-      const friend = document.querySelector("#nickname").value
+      const friend = document.querySelector("#nickname")
       console.log(friend)
       fetch(`${routesApi.addFriends}`,{
         method: "POST",
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({nickname: friend})
+        body: JSON.stringify({nickname: friend.value})
       })
       .then(res => res.json())
       .then(data => {
@@ -210,8 +210,9 @@ class SearchFriends extends React.Component {
             alert("El usuario que intenta agregar ya es su amigo o ya le ha mandado solicitud")
           break;
           case "Se ha mandado solicitud":
-            window.location.reload()
+            friend.value = ""
             alert("Se ha mandado solicitud!")
+          break;
         }
     })
   }
@@ -225,8 +226,8 @@ class SearchFriends extends React.Component {
         },
         body: JSON.stringify({idFriend: nameDB[0].id})
     }).then(res => {
-      window.location.reload()
-      if(res.status == 200) return console.log("Ah aceptado a su amigo correctamente")
+      this.loadFriends()
+      this.props.reloadChats()
     })
   }
   this.loadFriends = () => {
@@ -234,6 +235,7 @@ class SearchFriends extends React.Component {
    .then(res => res.json())
    .then(data => {
     console.log(data)
+    document.querySelector("#stash").innerHTML = ""
     for(let i of data.result){
       const div = document.createElement("DIV"), p = document.createElement("P"),
       img = document.createElement("img"), divUser = document.createElement("DIV"),divButton = document.createElement("DIV"), 
@@ -285,7 +287,7 @@ class SearchFriends extends React.Component {
         },
         body: JSON.stringify({idFriend: nameDB[0].id})
     })
-    return window.location.reload()
+    return this.loadFriends()
     
   }
 }

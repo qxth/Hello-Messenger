@@ -4,8 +4,9 @@ import {
 } from 'react-router-dom'
 import chat from './chat/chat';
 import login from './login/login';
-import notFound from './views/notFound';
 import register from './register/register';
+import home from './views/home';
+import notFound from './views/notFound';
 import routerApi from './../server/utils/routes-api'
 
 const Router = () => {
@@ -20,12 +21,8 @@ const Router = () => {
 			console.log("======================")
 			console.log(routes)
 			console.log(routerApi)
-			if(data.data === false) {
-				return setRoutes(false)
-			}else{
-				return setRoutes(true)
+			if(data.data !== false) return setRoutes(true)
 
-			}
 		})
 	})
 	const Routes = () => {
@@ -46,6 +43,7 @@ const Router = () => {
 	return(
 	<div>
 		<Switch>
+			<Route exact path='/' component={home}/>
 			<Routes/>
 		</Switch>
 	</div>

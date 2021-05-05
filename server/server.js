@@ -54,6 +54,8 @@ const io = socketIo(server, {
   }
 })
 
+//const io = socketIo(server)
+
 io.on("connection", (socket) => {
  let room;
  let idFriend; 
@@ -72,8 +74,6 @@ io.on("connection", (socket) => {
       const parametros = [data, room]
       const sql = `update ChatStorage set ChatData = concat(substring_index(ChatData, "]", 1), ?) WHERE idChat=?`
       await query(sql, parametros)
-
-
    })
 
   socket.on("typing", (user) =>{
@@ -86,12 +86,6 @@ io.on("connection", (socket) => {
 
 })
 
-
-
-
 const appl = server.listen(app.get('port'), () => {
   console.log(`Server on port ${app.get('port')}`)
 })
-
-
-
