@@ -86,7 +86,7 @@ const styles ={
     '&[aria-selected="true"]':{
       color:"rgb(199, 204, 207)",
       background: "rgb(2,0,36)",
-      background:"linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(1,0,10,0.6783088235294117) 0%, rgba(0,0,0,1) 100%, rgba(0,212,255,1) 100%)",
+      background:"#131c21",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -99,7 +99,16 @@ const styles ={
       OTransition: ".4s all ease-in-out",
       transition: ".4s all ease-in-out"
     },
-  }
+  },
+  status:{
+    width: 10,
+    position: "absolute",
+    marginLeft: 21,
+    marginTop: 19,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "red"
+   },
 }
 
 class Chat extends React.Component {
@@ -110,6 +119,7 @@ class Chat extends React.Component {
       selected: false,
       chatSelected: false,
       friends: [],
+      friendsStatus: [],
       canal: true,
       user: null
     }
@@ -182,25 +192,9 @@ class Chat extends React.Component {
    .then(res => res.json())
    .then(data => {
     for(let i of data.friendsData){
-      const div = document.createElement("DIV"), p = document.createElement("P"),
-      img = document.createElement("img");
-      div.setAttribute("name", `${i.nickname}`)
-      div.setAttribute("aria-selected", this.state.selected)
-      div.setAttribute("role", "option")
-      div.setAttribute("class", `${this.props.classes.aria}`)
-      img.src= "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png"
-      img.width="30"
-      img.height="30"
-      img.style.borderRadius="50%"
-      p.style.marginLeft="15px"
-      p.innerText= `${i.nickname}`
       this.setState({
-        friends: [...this.state.friends, {id:i.id, name: i.nickname }]
+        friends: [...this.state.friends, {id:i.id, name: i.nickname, status: i.status }],
       })
-      div.appendChild(img)
-      div.appendChild(p)
-      console.log(this.state.friends)
-      document.querySelector("#friends").appendChild(div)
     }
    })
   }
@@ -214,8 +208,23 @@ class Chat extends React.Component {
     .then(data => {
       console.log(data)
       this.setState({user: data.data.nickname})
+      Socket.emit("online", data.data.id);
     })
-    this.reloadChats() 
+    this.reloadChats()
+    setInterval(() => {
+     fetch(routesApi.getAllFriends)
+     .then(res => res.json())
+     .then(data => {
+      for(let i of data.friendsData){
+        this.setState({
+          friendsStatus: [...this.state.friendsStatus, {name: i.nickname, status: i.status}]
+        })
+      }
+     })
+     this.state.friendsStatus.map((val) => (
+      document.querySelector(`#${val.name}`).style.backgroundColor = val.status
+     ))
+    }, 10000)
   }
 
 render(){
@@ -244,6 +253,13 @@ render(){
       <PersonAddIcon size="small" style={{marginRight: 10}}/>
       <Typography variant="body1">Add Friends</Typography>
       </div>
+      {this.state.friends.map((val) => (
+        <div key={val.name} name={val.name} aria-selected="false" role="option" className="Chat-aria-4">
+           <div id={val.name} className={classes.status} style={{backgroundColor: val.status}}></div>
+           <img src="https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png" width="30" height="30" style={{borderRadius: "50%"}}/>
+           <p style={{marginLeft: 15}}>{val.name}</p>
+        </div>
+      ))}
       </div>
     </div>
 

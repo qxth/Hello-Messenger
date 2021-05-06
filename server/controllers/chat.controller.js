@@ -34,7 +34,7 @@ export default{
     	.then(async rows => {
     		if(rows.length === 0) return res.json({status: 200, friendsData: []});
     		let parametros = []
-    		let sql = "SELECT id, nickname FROM UserData WHERE "
+    		let sql = "SELECT id, nickname, status FROM UserData WHERE "
     		for(let i of rows){
     			parametros.push(i.idFriend)
     			sql += "id=? OR "

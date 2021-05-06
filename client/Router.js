@@ -30,11 +30,13 @@ const Router = () => {
 		if(routes == true) return(
 			<React.Fragment>
 				<Route exact path='/chat' component={chat}/>
+				<Route exact path="*" component={notFound}/>
 			</React.Fragment>
 			);
 			return( 
 				<React.Fragment>
 					<Route exact path='/login' component={login}/>
+					<Route exact path="*" component={notFound}/>
 					<Route exact path='/register' component={register}/>
 				</React.Fragment>
 			)	

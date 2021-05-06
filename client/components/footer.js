@@ -159,9 +159,9 @@ class Footer extends React.Component {
                 </div>
                 <div className={classes.section}>
                   <h5>Rutas</h5>
-                  <Link>Inicio</Link>
-                  <Link>Iniciar sesión</Link>
-                  <Link>Registrarse</Link>
+                  <Link href="/">Inicio</Link>
+                  <Link href="/login">Iniciar sesión</Link>
+                  <Link href="/register">Registrarse</Link>
                   <Link>Descargar</Link>
                 </div>
                 <div className={classes.section}>

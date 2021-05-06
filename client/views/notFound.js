@@ -10,22 +10,49 @@ import {
 } from '@material-ui/core'
 import {withStyles} from '@material-ui/core/styles'
 
-const styles ={}
+const styles ={
 
-class Login extends React.Component {
+  container: {
+    backgroundColor: '#1f2428',
+    minHeight: '100vh',
+    display: 'grid',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center center',
+    fontFamily: "'sans-serif'",
+    color: "#fff",
+    "&>h1": {
+      textAlign: "center",
+      letterSpacing: "px",
+      padding: "100px",
+      fontSize: "1000%",
+      fontWeight: "bold"
+    },
+    "&>p": {
+      textAlign: "center",
+      fontSize: "100%",
+      position: "relative",
+      bottom: "200px"
+    },
+    "&>h2": { fontSize: "40px", padding: "20px" }
+  }
+}
+
+class Notfound extends React.Component {
   constructor(props){
     super(props)
     this.state = {}
 
   }
   render(){
+  const {classes} = this.props; 
 	return (
-		<div>
-    <h1>Not found 404</h1>
+		<div className={classes.container}>
+      <h1>404</h1>
+      <p>Page does not exist! Unless you were looking for this error page, In which case you find it!</p>
 		</div>
 	)  	
   }
 
 }
 
-export default hot(module)(withStyles(styles)(Login))
+export default hot(module)(withStyles(styles)(Notfound))
