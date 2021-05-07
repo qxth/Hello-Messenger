@@ -1,24 +1,32 @@
-import React from 'react';
-import { hot } from 'react-hot-loader';
+import React from "react";
+import { hot } from "react-hot-loader";
 
 //#Material UI
 import {
-  TextField, Container, Typography,
-  List, ListItem, ListItemText,
-  AppBar, InputAdornment, IconButton,
-  Divider, Button
-} from '@material-ui/core'
-import {withStyles} from '@material-ui/core/styles'
+  TextField,
+  Container,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  AppBar,
+  InputAdornment,
+  IconButton,
+  Divider,
+  Button,
+} from "@material-ui/core";
+import { withStyles } from "@material-ui/core/styles";
 
 //# Extras
-import routes from './../../server/utils/routes-api'
+import routes from "./../../server/utils/routes-api";
 
-const styles ={
+const styles = {
   container: {
-      height:"100vh",
-      backgroundImage: "url(https://epicbootstrap.com/freebies/snippets/login-form-dark/assets/img/star-sky.jpg)",
-      backgroundSize:"cover",
-      backgroundPosition: "bottom", 
+    height: "100vh",
+    backgroundImage:
+      "url(https://epicbootstrap.com/freebies/snippets/login-form-dark/assets/img/star-sky.jpg)",
+    backgroundSize: "cover",
+    backgroundPosition: "bottom",
   },
   form: {
     maxWidth: "320px",
@@ -31,10 +39,10 @@ const styles ={
     top: "50%",
     left: "50%",
     color: "#fff",
-    boxShadow: "3px 3px 4px rgba(0,0,0,0.2)"
+    boxShadow: "3px 3px 4px rgba(0,0,0,0.2)",
   },
-  formGroup:{
-    marginBottom: "1rem"
+  formGroup: {
+    marginBottom: "1rem",
   },
   formControl: {
     background: "none",
@@ -50,41 +58,41 @@ const styles ={
     padding: ".375rem .75rem",
     fontSize: "1rem",
     lineHeight: 1.5,
-    transition: "border-color .15s ease-in-out,box-shadow .15s ease-in-out"
+    transition: "border-color .15s ease-in-out,box-shadow .15s ease-in-out",
   },
   btnPrimary: {
-      fontWeight: 400,
-      textAlign: "center",
-      whiteSpace: "nowrap",
-      verticalAlign: "middle",
-      WebkitUserSelect: "none",
-      MozUserSelect: "none",
-      msUserSelect: "none",
-      userSelect: "none",
-      fontSize: "1rem",
-      lineHeight: 1.5,
-      transition:
-        "color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out",
-      backgroundColor: "#7289da",
-      border: "none",
-      borderRadius: "4px",
-      padding: "11px",
-      boxShadow: "none",
-      marginTop: "26px",
-      textShadow: "none",
+    fontWeight: 400,
+    textAlign: "center",
+    whiteSpace: "nowrap",
+    verticalAlign: "middle",
+    WebkitUserSelect: "none",
+    MozUserSelect: "none",
+    msUserSelect: "none",
+    userSelect: "none",
+    fontSize: "1rem",
+    lineHeight: 1.5,
+    transition:
+      "color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out",
+    backgroundColor: "#7289da",
+    border: "none",
+    borderRadius: "4px",
+    padding: "11px",
+    boxShadow: "none",
+    marginTop: "26px",
+    textShadow: "none",
+    outline: "none",
+    display: "block",
+    color: "white",
+    width: "100%",
+    "&:hover": {
+      background: "#677bc4",
       outline: "none",
-      display: "block",
-      color:"white",
-      width: "100%",
-        "&:hover":{
-          background: "#677bc4",
-          outline: "none"
-        },
-        "&:active":{
-          background: "#5b6eae",
-          outline: "none",
-          transform: "translateY(1px)"
-        }
+    },
+    "&:active": {
+      background: "#5b6eae",
+      outline: "none",
+      transform: "translateY(1px)",
+    },
   },
   forgot: {
     display: "block",
@@ -93,58 +101,79 @@ const styles ={
     color: "#6f7a85",
     opacity: 0.9,
     textDecoration: "none",
-    "&:hover":{
+    "&:hover": {
       opacity: 1,
-      textDecoration: "none"
+      textDecoration: "none",
     },
-    "&:active":{
+    "&:active": {
       opacity: 1,
-      textDecoration: "none"
-    }
+      textDecoration: "none",
+    },
   },
-}
+};
 
 class Login extends React.Component {
-  constructor(props){
-    super(props)
-    this.state = {}
+  constructor(props) {
+    super(props);
+    this.state = {};
     this.submit = (e) => {
-    	e.preventDefault()
-        fetch(routes.iniciarSesion,{
-          method: "POST",
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-          	nickname: document.querySelector("#user").value,
-          	password: document.querySelector("#pass").value
-          })
-      	}).then(res => {
-          	if(res.status === 200) return this.props.history.push("/chat")
-              return alert("Ha ocurrido un error!")
-          })	
-    	}
-
+      e.preventDefault();
+      fetch(routes.iniciarSesion, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nickname: document.querySelector("#user").value,
+          password: document.querySelector("#pass").value,
+        }),
+      }).then((res) => {
+        if (res.status === 200) return this.props.history.push("/chat");
+        return alert("Ha ocurrido un error!");
+      });
+    };
   }
-  render(){
-    const {classes} = this.props;
-	return (
-		<div className={classes.container}>
-		<form className={classes.form} onSubmit={this.submit}>
-            <div className={classes.formGroup}><h2>Login</h2></div>
-            <div className={classes.formGroup}><input className={classes.formControl} type="text"  id="user" placeholder="Username"/></div>
-            <div className={classes.formGroup}><input 
-            className={classes.formControl} type="password" name="password" 
-            id="pass" placeholder="Password"/></div>
-            <div className={classes.formGroup}><button className={classes.btnPrimary} type="submit">Log In</button></div>
-            <a href="#" className={classes.forgot}>¿Forgot your password?</a>
-            <p className={classes.forgot}>or</p>
-            <a href="/register" className={classes.forgot}>¿Don't have an account?</a>
-		</form>
-		</div>
-	)  	
+  render() {
+    const { classes } = this.props;
+    return (
+      <div className={classes.container}>
+        <form className={classes.form} onSubmit={this.submit}>
+          <div className={classes.formGroup}>
+            <h2>Login</h2>
+          </div>
+          <div className={classes.formGroup}>
+            <input
+              className={classes.formControl}
+              type="text"
+              id="user"
+              placeholder="Username"
+            />
+          </div>
+          <div className={classes.formGroup}>
+            <input
+              className={classes.formControl}
+              type="password"
+              name="password"
+              id="pass"
+              placeholder="Password"
+            />
+          </div>
+          <div className={classes.formGroup}>
+            <button className={classes.btnPrimary} type="submit">
+              Log In
+            </button>
+          </div>
+          <a href="#" className={classes.forgot}>
+            ¿Forgot your password?
+          </a>
+          <p className={classes.forgot}>or</p>
+          <a href="/register" className={classes.forgot}>
+            ¿Don't have an account?
+          </a>
+        </form>
+      </div>
+    );
   }
-
 }
 
-export default hot(module)(withStyles(styles)(Login))
+export default hot(module)(withStyles(styles)(Login));

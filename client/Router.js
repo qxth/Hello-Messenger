@@ -1,56 +1,55 @@
-import React, {useEffect, useState} from 'react'
-import { 
-    Route, Switch
-} from 'react-router-dom'
-import chat from './chat/chat';
-import login from './login/login';
-import register from './register/register';
-import home from './views/home';
-import notFound from './views/notFound';
-import routerApi from './../server/utils/routes-api'
+import React, { useEffect, useState } from "react";
+import { Route, Switch } from "react-router-dom";
+import Chat from "./chat/chat";
+import Login from "./login/login";
+import Register from "./register/register";
+import Home from "./views/home";
+import NotFound from "./views/notFound";
+import routerApi from "./../server/utils/routes-api";
 
 const Router = () => {
-	const [routes, setRoutes] = useState(false)
-	useEffect(() => {
-		fetch(`${routerApi.verificarToken}`, {
-			method: "GET"
-		}).then(res => res.json())
-		.then(data => {
-			console.log("================")
-			console.log(data)
-			console.log("======================")
-			console.log(routes)
-			console.log(routerApi)
-			if(data.data !== false) return setRoutes(true)
+  const [routes, setRoutes] = useState(false);
+  useEffect(() => {
+    fetch(`${routerApi.verificarToken}`, {
+      method: "GET",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("================");
+        console.log(data);
+        console.log("======================");
+        console.log(routes);
+        console.log(routerApi);
+        if (data.data !== false) return setRoutes(true);
+      });
+  });
+  const Routes = () => {
+    if (routes == true)
+      return (
+        <>
+          <Switch>
+            <Route exact path="/" component={Home} />
+            <Route exact path="/chat" component={Chat} />
+            <Route exact path="*" component={NotFound} />
+          </Switch>
+        </>
+      );
+    return (
+      <>
+        <Switch>
+          <Route exact path="/" component={Home} />
+          <Route exact path="/login" component={Login} />
+          <Route exact path="/register" component={Register} />
+          <Route exact path="*" component={NotFound} />
+        </Switch>
+      </>
+    );
+  };
+  return (
+    <div>
+        <Routes />
+    </div>
+  );
+};
 
-		})
-	})
-	const Routes = () => {
-		console.log(routes)
-		if(routes == true) return(
-			<React.Fragment>
-				<Route exact path='/chat' component={chat}/>
-				<Route exact path="*" component={notFound}/>
-			</React.Fragment>
-			);
-			return( 
-				<React.Fragment>
-					<Route exact path='/login' component={login}/>
-					<Route exact path="*" component={notFound}/>
-					<Route exact path='/register' component={register}/>
-				</React.Fragment>
-			)	
-
-	}
-	return(
-	<div>
-		<Switch>
-			<Route exact path='/' component={home}/>
-			<Routes/>
-		</Switch>
-	</div>
-	)
-
-}
-
-export default Router
+export default Router;

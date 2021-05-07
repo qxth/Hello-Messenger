@@ -25,7 +25,9 @@ import {
   Send as SendIcon,
   InsertEmoticon as InsertEmoticonIcon,
 } from "@material-ui/icons";
+
 //Extras
+import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
 
 const styles = {
@@ -146,8 +148,7 @@ class Talk extends React.Component {
 
     Socket.on("message", (msg) => {
       let img = document.createElement("img");
-      img.src =
-        "https://www.pinclipart.com/picdir/middle/154-1548998_png-file-fa-user-circle-icon-clipart.png";
+      img.src = {defaultAv};
       img.width = "24";
       img.height = "24";
       img.style.borderRadius = "50%";

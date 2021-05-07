@@ -20,6 +20,7 @@ import { withStyles } from "@material-ui/core/styles";
 //# Components
 import Footer from "../components/footer";
 import Header from "../components/header";
+import catIcon from './../img/cat-icon.png'
 
 const styles = {
   section1: {
@@ -116,7 +117,7 @@ class Home extends React.Component {
     return (
       <div>
         <div className={classes.sectioncon}>
-          <Header />
+          <Header catIcon={catIcon}/>
           <div className={classes.section1}>
             <div className={classes.box}>
               <h1>Hello Messenger</h1>
@@ -141,7 +142,7 @@ class Home extends React.Component {
             </div>
           </div>
         </div>
-        <Footer />
+        <Footer catIcon={catIcon}/>
       </div>
     );
   }

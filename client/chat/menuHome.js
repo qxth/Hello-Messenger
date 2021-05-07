@@ -17,6 +17,7 @@ import {
   Avatar,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
+import catIcon from './../img/cat-icon.png'
 
 const styles = {
   section1: {
@@ -119,7 +120,7 @@ class Menu extends React.Component {
               <img
                 style={{ width: 40, height: 40, borderRadius: "50%" }}
                 alt="HelloMessengerLogo"
-                src="https://toppng.com/uploads/preview/free-download-cat-png-vector-icon-cat-transparent-background-cat-icon-transparent-background-11563035549ypnlilorb5.png"
+                src={catIcon}
               />{" "}
               Messenger
             </h1>

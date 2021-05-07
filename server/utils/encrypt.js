@@ -1,17 +1,17 @@
-import crypto from 'crypto-js'
-import keys from './../../secret/keys';
+import crypto from "crypto-js";
+import keys from "./../../secret/keys";
 
 const key = keys.cryptoKey;
-const iv  = keys.cryptoIV; 
+const iv = keys.cryptoIV;
 const cryptAnsw = (answ) => {
-	const hash = crypto.AES.encrypt(answ, key, { iv: iv, outputLength: 20 });
-	console.log(hash.toString())
-	return hash.toString()
-}
+  const hash = crypto.AES.encrypt(answ, key, { iv: iv, outputLength: 20 });
+  console.log(hash.toString());
+  return hash.toString();
+};
 const decryptAnsw = (answ) => {
-	const decrypt = crypto.AES.decrypt(answ.toString(), key, {iv: iv})
-	console.log(decrypt.toString(crypto.enc.Utf8))  
-	return decrypt
-}
+  const decrypt = crypto.AES.decrypt(answ.toString(), key, { iv: iv });
+  console.log(decrypt.toString(crypto.enc.Utf8));
+  return decrypt;
+};
 
-export {cryptAnsw, decryptAnsw}
+export { cryptAnsw, decryptAnsw };

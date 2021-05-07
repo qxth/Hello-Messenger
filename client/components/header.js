@@ -122,7 +122,7 @@ class Header extends React.Component {
             >
               <Avatar
                 alt="HelloMessengerLogo"
-                src="https://toppng.com/uploads/preview/free-download-cat-png-vector-icon-cat-transparent-background-cat-icon-transparent-background-11563035549ypnlilorb5.png"
+                src={this.props.catIcon}
               />
             </IconButton>
             <Typography variant="h6" color="inherit">
