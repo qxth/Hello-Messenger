@@ -16,7 +16,9 @@ import user from "./routes/user.routes";
 import authVerify from "./auth/authVerify";
 import fetch from "node-fetch";
 import routerApi from "./utils/routes-api";
-
+import redisAdapter from 'socket.io-redis';
+import Redis from 'ioredis';
+const redis = new Redis();
 const app = express();
 devBundle.compile(app);
 app.set("port", 3000);
@@ -51,37 +53,47 @@ app.get("*", (req, res) => {
 const server = http.createServer(app);
 
 const io = socketIo(server);
-/*
-io.engine.generateId = (req) => {
-  fetch(`http://localhost:3000${routerApi.verificarToken}`, {
-    method: "GET"
-  }).then(res => res.json())
-  .then(data => {
-    console.log("================")
-    console.log(data)
-    console.log("======================")
-    return data.data.id;
-  })
-}
-*/
+io.adapter(redisAdapter({ host: 'localhost', port: 6379 }));
 
 io.on("connection", (socket) => {
-  let room;
-  let idFriend;
-  const con = [];
+  let room, idFriend, idUser;
   socket.on("online", async (id) => {
-    con.push(id);
-    console.log(con);
-    const parametros = ["#00FF00", id];
-    const sql = `update UserData set Status =?  WHERE id=?`;
-    await query(sql, parametros);
+    redis
+    .pipeline()
+    .set(`status_${id}`, "online")
+    .set(`dataInit_${id}`, `{"id": ${id}, "socketID": "${socket.id}"}`)
+    .exec((err, res) => {
+      if(err) return console.log(err);
+      console.log(res)
+      idUser = id
+    });
   });
+  socket.on("checkOnline", async(id) => {
+    redis.get(`status_${id.id}`, (err, res) => {
+      if(err) return console.log(err)
+      console.log("===================")
+      console.log(`${id.nickname}:${res}`)
+      console.log("===================")
+      if(res == "online") return socket.emit("checkOnline", {status: "green", nickname: id.nickname});
+      socket.emit("checkOnline", {status: "red", nickname: id.nickname})
+    })
+  })
+  socket.on("updateService", async(id) => {
+    redis.get(`dataInit_${id}`, (err, res) => {
+      if(err) return console.error(err);
+      const json = JSON.parse(res)
+      console.log("====data=====")
+      console.log(json)
+      io.to(`${json.socketID}`).emit("updateService")
+      console.log("====data=====")
+
+    })
+  })
   socket.on("create", (roomname) => {
     (room = roomname.room), (idFriend = roomname.id);
     socket.join([room]);
     console.log(roomname);
   });
-
   socket.on("message", async (msg) => {
     io.to(room).emit("message", msg);
     console.log(msg);
@@ -103,9 +115,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", async (reason) => {
-    const parametros = ["red", con[0]];
-    const sql = `update UserData set Status =? WHERE id=?`;
-    await query(sql, parametros);
+    redis
+    .pipeline()
+    .set(`status_${idUser}`, "offline")
+    .del(`dataInit_${idUser}`)
+    .exec((err, res) => {
+      if(err) return console.log(err)
+        console.log(res)
+    })
   });
 });
 

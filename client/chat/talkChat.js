@@ -109,6 +109,8 @@ const styles = {
     backgroundColor: "#1f2428",
     marginLeft: 15,
     marginRight: 15,
+    gridAutoRows: "max-content",
+    gridRow: 103,
     "&>div": {
       borderRadius: 12,
     },
@@ -148,7 +150,7 @@ class Talk extends React.Component {
 
     Socket.on("message", (msg) => {
       let img = document.createElement("img");
-      img.src = {defaultAv};
+      img.src = "/dist/051210ccc8930db279f318fbbbc3e2cf.png";
       img.width = "24";
       img.height = "24";
       img.style.borderRadius = "50%";
@@ -255,8 +257,10 @@ class Talk extends React.Component {
           ) : (
             <></>
           )}
-          <Typography className={classes.Typ} id="istyping"></Typography>
           <div className={classes.Typer}>
+            <div>
+              <Typography className={classes.Typ} id="istyping"></Typography>
+            </div>
             <div className={classes.tab}>
               <IconButton color="inherit" onClick={this.icons}>
                 <InsertEmoticonIcon />

@@ -232,10 +232,17 @@ class SearchFriends extends React.Component {
         },
         body: JSON.stringify({ idFriend: nameDB[0].id }),
       }).then((res) => {
-        this.loadFriends();
-        this.props.reloadChats();
+        if(res.status === 200){
+          console.log(nameDB[0].id)
+          this.loadFriends();
+          this.props.reloadChats();
+          Socket.emit("updateService", nameDB[0].id)
+        }
       });
     };
+    Socket.on("updateService", () => {
+      this.props.reloadChats();
+    })
     this.loadFriends = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())

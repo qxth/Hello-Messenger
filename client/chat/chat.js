@@ -92,8 +92,6 @@ const styles = {
     display: "flex",
     '&[aria-selected="true"]': {
       color: "rgb(199, 204, 207)",
-      background: "rgb(2,0,36)",
-      background: "#131c21",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -109,13 +107,17 @@ const styles = {
   },
   status: {
     width: 10,
-    position: "absolute",
-    marginLeft: 21,
+    position: "relative",
+    left: 29,
     marginTop: 19,
     height: 10,
     borderRadius: 5,
     backgroundColor: "red",
   },
+  friends: {
+    maxHeight: 630,
+    overflowY: "auto"
+  }
 };
 
 class Chat extends React.Component {
@@ -126,7 +128,6 @@ class Chat extends React.Component {
       selected: false,
       chatSelected: false,
       friends: [],
-      friendsStatus: [],
       canal: true,
       user: null,
     };
@@ -199,17 +200,20 @@ class Chat extends React.Component {
     };
     this.reloadChats = () => {
       fetch(routesApi.getAllFriends)
-        .then((res) => res.json())
-        .then((data) => {
-          for (let i of data.friendsData) {
-            this.setState({
-              friends: [
-                ...this.state.friends,
-                { id: i.id, name: i.nickname, status: i.status },
-              ],
-            });
-          }
-        });
+      .then((res) => res.json())
+      .then(async (data) => {
+        this.setState({
+          friends: []
+        })
+        for (let i of data.friendsData) {
+          this.setState({
+            friends: [
+              ...this.state.friends,
+              { id: i.id, name: i.nickname },
+            ],
+          });
+        }
+      });
     };
   }
 
@@ -217,32 +221,22 @@ class Chat extends React.Component {
     fetch(routesApi.verificarToken, {
       method: "GET",
     })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);
-        this.setState({ user: data.data.nickname });
-        Socket.emit("online", data.data.id);
-      });
+    .then((res) => res.json())
+    .then((data) => {
+      console.log(data);
+      this.setState({ user: data.data.nickname });
+      Socket.emit("online", data.data.id);
+    });
     this.reloadChats();
     setInterval(() => {
-      fetch(routesApi.getAllFriends)
-        .then((res) => res.json())
-        .then((data) => {
-          for (let i of data.friendsData) {
-            this.setState({
-              friendsStatus: [
-                ...this.state.friendsStatus,
-                { name: i.nickname, status: i.status },
-              ],
-            });
-          }
-        });
-      this.state.friendsStatus.map(
-        (val) =>
-          (document.querySelector(`#${val.name}`).style.backgroundColor =
-            val.status)
-      );
-    }, 10000);
+      const friends = Array.from(this.state.friends)
+      for(let i of friends){
+        Socket.emit("checkOnline", {id: i.id, nickname: i.name})
+      }
+    }, 10000)
+    Socket.on("checkOnline", async (status) => {
+      document.querySelector(`#${status.nickname}`).style.backgroundColor = `${status.status}`;
+    })
   }
 
   render() {
@@ -275,7 +269,7 @@ class Chat extends React.Component {
             </IconButton>
           </AppBar>
 
-          <div id="friends" onClick={this.aria} role="region">
+          <div id="friends" className={classes.friends} onClick={this.aria} role="region">
             <div aria-selected={this.state.selected} className={classes.tools}>
               <PersonAddIcon size="small" style={{ marginRight: 10 }} />
               <Typography variant="body1">Add Friends</Typography>
