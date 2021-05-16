@@ -128,7 +128,7 @@ class Login extends React.Component {
           password: document.querySelector("#pass").value,
         }),
       }).then((res) => {
-        if (res.status === 200) return this.props.history.push("/chat");
+        if (res.status === 200) return window.location.href = "/chat";
         return alert("Ha ocurrido un error!");
       });
     };

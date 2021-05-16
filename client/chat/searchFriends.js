@@ -1,10 +1,6 @@
 import React from "react";
 import { hot } from "react-hot-loader";
 
-//#SocketIO
-import Socket from "./Socket";
-import io from "socket.io-client";
-
 //Material UI
 import {
   TextField,
@@ -192,6 +188,7 @@ class SearchFriends extends React.Component {
     this.state = {
       stash: [],
     };
+    const {socket} = this.props;
     this.searchFriends = (e) => {
       e.preventDefault();
       const friend = document.querySelector("#nickname");
@@ -236,13 +233,13 @@ class SearchFriends extends React.Component {
           console.log(nameDB[0].id)
           this.loadFriends();
           this.props.reloadChats();
-          Socket.emit("updateService", nameDB[0].id)
+          socket.emit("updateService", nameDB[0].id)
         }
       });
     };
-    Socket.on("updateService", () => {
+    socket.on("updateService", () => {
       this.props.reloadChats();
-    })
+    });
     this.loadFriends = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
@@ -317,6 +314,7 @@ class SearchFriends extends React.Component {
   }
   componentDidMount() {
     this.loadFriends();
+    this.props.socket.emit("leaveRoom")
   }
 
   render() {

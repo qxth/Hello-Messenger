@@ -9,7 +9,7 @@
     "start": "NODE_ENV=production node ./dist/server.generated.js"
   },
   "dependencies": {
-    "@hot-loader/react-dom": "16.13.0",
+    "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@material-ui/core": "^4.11.1",
     "@material-ui/icons": "^4.9.1",
     "bcrypt": "^5.0.1",
@@ -31,6 +31,7 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "react": "16.8.0",
+    "react-cookie": "^4.0.3",
     "react-dom": "16.8.0",
     "react-hot-loader": "4.13.0",
     "react-router-dom": "^5.2.0",
@@ -43,6 +44,7 @@
     "@babel/core": "7.9.0",
     "@babel/preset-env": "7.9.0",
     "@babel/preset-react": "7.9.4",
+    "@hot-loader/react-dom": "16.13.0",
     "babel-loader": "8.1.0",
     "file-loader": "^6.2.0",
     "nodemon": "2.0.2",

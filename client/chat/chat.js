@@ -1,10 +1,6 @@
 import React from "react";
 import { hot } from "react-hot-loader";
 
-//#SocketIO
-import Socket from "./Socket";
-import io from "socket.io-client";
-
 //Material UI
 import {
   TextField,
@@ -17,24 +13,27 @@ import {
   InputAdornment,
   IconButton,
   Divider,
+  Menu,
+  MenuItem,
+  Fade,
+  Link,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 
 //#Material UI/Icons
 import {
   Menu as MenuIcon,
-  AccountCircle, MoreVert as MoreVertIcon,
-  PersonAdd as PersonAddIcon
+  AccountCircle,
+  MoreVert as MoreVertIcon,
+  PersonAdd as PersonAddIcon,
 } from "@material-ui/icons";
 
 //#Extras
 import Talk from "./talkChat";
-import Menu from "./menuHome";
+import MenuHome from "./menuHome";
 import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
-
-//#Search Friends
-import Search from "./searchFriends";
+import { SocketContext } from "../ContextProvider";
 
 const styles = {
   "@global": {
@@ -63,22 +62,20 @@ const styles = {
     marginTop: "2%",
   },
   contacts: {
-    backgroundColor: "#33383b",
+    backgroundColor: "#131c21",
   },
   aria: {
     backgroundColor: "#141b23",
     color: "#9d9ea3",
     cursor: "pointer",
     display: "flex",
-    borderBottom: "1px solid #3c4144",
+    borderTop: "1px solid #30383d",
     alignItems: "center",
     paddingLeft: "20px",
     height: "72px",
     '&[aria-selected="true"]': {
       color: "rgb(199, 204, 207)",
-      background: "rgb(2,0,36)",
-      background:
-        "linear-gradient(90deg, rgba(2,0,36,1) 0%, rgba(1,0,10,0.6783088235294117) 0%, rgba(0,0,0,1) 100%, rgba(0,212,255,1) 100%)",
+      backgroundColor: "rgba(50, 55, 57, 0.7)",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -116,11 +113,38 @@ const styles = {
   },
   friends: {
     maxHeight: 630,
-    overflowY: "auto"
-  }
+    overflowY: "auto",
+  },
+  menu: {
+    "&>div": {
+      top: "39px !important",
+      left: "160px !important",
+      color: "#fff",
+      background: "#2a2f32",
+      width: "151px !important",
+    },
+  },
+  links: {
+    color: "white",
+    "&:hover": {
+      textDecoration: "none",
+    },
+  },
+  notify: {
+    backgroundColor: "red",
+    borderRadius: "51%",
+    padding: 5,
+    alignItems: "center",
+    width: 20,
+    position: "absolute",
+    right: "78%",
+    justifyContent: "center",
+    display: "flex",
+    height: 20,
+  },
 };
-
 class Chat extends React.Component {
+  static contextType = SocketContext;
   constructor(props) {
     super(props);
     this.state = {
@@ -130,20 +154,19 @@ class Chat extends React.Component {
       friends: [],
       canal: true,
       user: null,
+      anchorEl: null,
     };
-    this.menuChat = () => {
-      if (!this.state.chatSelected)
-        return (
-          <React.Fragment>
-            <Menu />
-          </React.Fragment>
-        );
-      return (
-        <React.Fragment>
-          <Talk defaultAv={defaultAv} chatSelected={this.state.chatSelected} user={this.state.user} />
-        </React.Fragment>
-      );
+    this.handleClick = (e) => {
+      this.setState({
+        anchorEl: e.currentTarget,
+      });
     };
+    this.handleClose = () => {
+      this.setState({
+        anchorEl: null,
+      });
+    };
+
     this.aria = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
@@ -165,17 +188,25 @@ class Chat extends React.Component {
       })
         .then((res) => res.json())
         .then((data) => {
+          this.context.emit("create", { room: data.idChat, id: nameDB[0].id });
+          const newFriends = Array.from(this.state.friends);
+          newFriends[newFriends.findIndex((e) => e.id === nameDB[0].id)] = {
+            id: nameDB[0].id,
+            name: nameDB[0].name,
+            notify: 0,
+          };
+          this.setState({
+            friends: newFriends,
+          });
+          document.getElementById(`${nameDB[0].id}`).style.opacity = "0";
           const mensajesDiv = document.getElementById("mensajes");
-          Socket.emit("create", { room: data.idChat, id: nameDB[0].id });
           if (data.error) return (mensajesDiv.innerHTML = "");
-
           const json = data.dataChat.ChatData;
           json.shift();
           mensajesDiv.innerHTML = "";
           for (let data of json) {
             let img = document.createElement("img");
-            img.src =
-              `${defaultAv}`;
+            img.src = `${defaultAv}`;
             img.width = "24";
             img.height = "24";
             img.style.borderRadius = "50%";
@@ -200,19 +231,36 @@ class Chat extends React.Component {
     };
     this.reloadChats = () => {
       fetch(routesApi.getAllFriends)
-      .then((res) => res.json())
-      .then(async (data) => {
-        this.setState({
-          friends: []
-        })
-        for (let i of data.friendsData) {
+        .then((res) => res.json())
+        .then(async (data) => {
           this.setState({
-            friends: [
-              ...this.state.friends,
-              { id: i.id, name: i.nickname },
-            ],
+            friends: [],
           });
+          for (let i of data.friendsData) {
+            this.context.emit("newMessage", { id: i.id, name: i.nickname });
+          }
+        });
+      this.context.on("newMessage", (n) => {
+        this.setState({
+          friends: [
+            ...this.state.friends,
+            { id: n.id, name: n.nickname, notify: n.notify },
+          ],
+        });
+        console.log(this.state.friends);
+      });
+    };
+    this.statusChecker = () => {
+      setInterval(() => {
+        const friends = Array.from(this.state.friends);
+        for (let i of friends) {
+          this.context.emit("checkOnline", { id: i.id, nickname: i.name });
         }
+      }, 10000);
+      this.context.on("checkOnline", async (status) => {
+        document.querySelector(
+          `#${status.nickname}`
+        ).style.backgroundColor = `${status.status}`;
       });
     };
   }
@@ -221,26 +269,25 @@ class Chat extends React.Component {
     fetch(routesApi.verificarToken, {
       method: "GET",
     })
-    .then((res) => res.json())
-    .then((data) => {
-      console.log(data);
-      this.setState({ user: data.data.nickname });
-      Socket.emit("online", data.data.id);
-    });
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        this.setState({ user: data.data.nickname });
+        this.context.emit("online", data.data.id);
+      });
     this.reloadChats();
-    setInterval(() => {
-      const friends = Array.from(this.state.friends)
-      for(let i of friends){
-        Socket.emit("checkOnline", {id: i.id, nickname: i.name})
-      }
-    }, 10000)
-    Socket.on("checkOnline", async (status) => {
-      document.querySelector(`#${status.nickname}`).style.backgroundColor = `${status.status}`;
-    })
+    this.statusChecker();
+    console.log("==context==");
+    console.log(this.context);
+    console.log("==context==");
+  }
+  componentWillUnmount() {
+    clearInterval(this.interval);
   }
 
   render() {
     const { classes } = this.props;
+    const open = Boolean(this.state.anchorEl);
     return (
       <div className={classes.fondo}>
         <div className={classes.contacts}>
@@ -248,15 +295,41 @@ class Chat extends React.Component {
             style={{
               position: "static",
               backgroundColor: "#2a2f32",
-              height: 46,
+              height: 50,
             }}
           >
             <IconButton
               color="inherit"
               style={{ display: "flex", alignSelf: "flex-end" }}
+              onClick={this.handleClick}
             >
               <MoreVertIcon />
             </IconButton>
+            <Menu
+              id="fade-menu"
+              anchorEl={this.state.anchorEl}
+              keepMounted
+              open={open}
+              onClose={this.handleClose}
+              TransitionComponent={Fade}
+              className={classes.menu}
+            >
+              <MenuItem onClick={this.handleClose}>
+                <Link className={classes.links} href="#">
+                  Profile
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={this.handleClose}>
+                <Link className={classes.links} href="#">
+                  Options
+                </Link>
+              </MenuItem>
+              <MenuItem onClick={this.handleClose}>
+                <Link className={classes.links} href="/logout">
+                  Logout
+                </Link>
+              </MenuItem>
+            </Menu>
             <IconButton
               color="inherit"
               style={{
@@ -269,7 +342,12 @@ class Chat extends React.Component {
             </IconButton>
           </AppBar>
 
-          <div id="friends" className={classes.friends} onClick={this.aria} role="region">
+          <div
+            id="friends"
+            className={classes.friends}
+            onClick={this.aria}
+            role="region"
+          >
             <div aria-selected={this.state.selected} className={classes.tools}>
               <PersonAddIcon size="small" style={{ marginRight: 10 }} />
               <Typography variant="body1">Add Friends</Typography>
@@ -287,6 +365,7 @@ class Chat extends React.Component {
                   className={classes.status}
                   style={{ backgroundColor: val.status }}
                 ></div>
+
                 <img
                   src={defaultAv}
                   width="30"
@@ -294,16 +373,25 @@ class Chat extends React.Component {
                   style={{ borderRadius: "50%" }}
                 />
                 <p style={{ marginLeft: 15 }}>{val.name}</p>
+                <div
+                  id={val.id}
+                  style={{ opacity: val.notify >= 1 ? "1" : "0" }}
+                  className={classes.notify}
+                >
+                  {val.notify}
+                </div>
               </div>
             ))}
           </div>
         </div>
-
-        {this.state.canal ? (
-          <this.menuChat />
-        ) : (
-          <Search reloadChats={this.reloadChats} />
-        )}
+        <Talk
+          canal={this.state.canal}
+          reloadChats={this.reloadChats}
+          socket={this.context}
+          defaultAv={defaultAv}
+          chatSelected={this.state.chatSelected}
+          user={this.state.user}
+        />
       </div>
     );
   }
