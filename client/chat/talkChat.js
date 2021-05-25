@@ -3,16 +3,9 @@ import { hot } from "react-hot-loader";
 
 //Material UI
 import {
-  TextField,
-  Container,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  AppBar,
-  InputAdornment,
-  IconButton,
-  Divider,
+  TextField, Container, Typography, List, 
+  ListItem, ListItemText, AppBar,
+  InputAdornment, IconButton, Divider,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import {
@@ -145,15 +138,17 @@ class Talk extends React.Component {
             date: new Date(),
           };
         document.getElementById("message").value = "";
-        socket.emit("checkRoom");
-        socket.emit("message", JSON.stringify(data));
+        setTimeout(()=>{this.props.friendsPosition(this.props.pos)}, 1000);
+          socket.emit("checkRoom");
+          socket.emit("sendLastUpdateLocal", this.props.friends)
+          socket.emit("message", JSON.stringify(data));
       }
     };
-
     socket.on("checkRoom", (n) => {
       const data = document.getElementById(`${n.id}`);
       data.style.opacity = "1";
       data.innerHTML = `${n.notify}`;
+      this.props.friendsPosition(n.id)
     });
 
     socket.on("message", (msg) => {
@@ -222,6 +217,7 @@ class Talk extends React.Component {
         this.NoTyp();
       }
     };
+
     this.onEmojiClick = (e, emojiObject) => {
       let chosenEmoji = null;
       chosenEmoji = emojiObject;
@@ -287,7 +283,6 @@ class Talk extends React.Component {
                       multiline
                       onKeyUp={this.IsTyping}
                       className={classes.input}
-                      isRequired="true"
                     />
                     <IconButton type="submit">
                       <SendIcon style={{ color: "#828689" }} />
@@ -307,13 +302,16 @@ class Talk extends React.Component {
     };
   }
   componentDidMount() {
-    const scroll = setInterval(() => {
+    this.scrollInterval= setInterval(() => {
       const chatBox = document.querySelector("#boxMensajes");
       if (chatBox) {
         chatBox.scrollTop = chatBox.scrollHeight;
-        clearInterval(scroll);
       }
+      console.log(this.props.chatSelected)
     }, 3000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.scrollInterval);
   }
   render() {
     const { classes } = this.props;

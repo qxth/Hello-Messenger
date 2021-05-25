@@ -33,6 +33,7 @@ import Talk from "./talkChat";
 import MenuHome from "./menuHome";
 import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
+import { Socket } from "./Socket";
 import { SocketContext } from "../ContextProvider";
 
 const styles = {
@@ -166,19 +167,22 @@ class Chat extends React.Component {
         anchorEl: null,
       });
     };
-
     this.aria = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
-      this.setState({ chatSelected: `${name}` });
       role.forEach((role) => {
         role.setAttribute("aria-selected", false);
       });
       e.target.setAttribute("aria-selected", true);
       const nameDB = this.state.friends.filter((e) => e.name === name);
       console.log(nameDB);
+      this.setState({ chatSelected: "SearchFriends" });
       if (nameDB.length === 0) return this.setState({ canal: false });
-      this.setState({ canal: true });
+      this.setState({
+        canal: true,
+        pos: `${nameDB[0].id}`,
+        chatSelected: `${nameDB[0].name}`,
+      });
       fetch(routesApi.getChat, {
         method: "POST",
         headers: {
@@ -237,31 +241,92 @@ class Chat extends React.Component {
             friends: [],
           });
           for (let i of data.friendsData) {
-            this.context.emit("newMessage", { id: i.id, name: i.nickname });
+            Socket.emit("newMessage", { id: i.id, name: i.nickname });
           }
         });
-      this.context.on("newMessage", (n) => {
-        this.setState({
-          friends: [
-            ...this.state.friends,
-            { id: n.id, name: n.nickname, notify: n.notify },
-          ],
-        });
-        console.log(this.state.friends);
-      });
     };
+    Socket.on("newMessage", (n) => {
+      this.setState({
+        friends: [
+          ...this.state.friends,
+          { id: n.id, name: n.nickname, notify: n.notify },
+        ],
+      });
+      console.log(this.state.friends);
+    });
+    this.requireLastUpdate = () => {
+      Socket.emit("requireLastUpdate");
+    };
+    Socket.on("requireLastUpdate", (arr) => {
+      console.log("Updating chats...");
+      console.log(arr);
+      console.log("====state friends====");
+      console.log(this.state.friends);
+      if (arr !== null) {
+        let currentArr = [],
+          array = JSON.parse(arr),
+          friends = Array.from(this.state.friends);
+        console.log(array);
+        for (let i = 0; i < friends.length; i++) {
+          if (array[i] !== undefined) {
+            console.log("array", array);
+            console.log("arraypos", array[i].id);
+            const posEl = this.state.friends.findIndex(
+              (ev) => ev.id === array[i].id
+            );
+            console.log("Position:", posEl);
+            console.log("this.state.friends:", this.state.friends[posEl]);
+            console.log("==current Array id===");
+            console.log(array[i]);
+            console.log("counter:", i);
+            if (posEl !== -1) {
+              console.log("push:", this.state.friends[posEl]);
+              currentArr.push(this.state.friends[posEl]);
+            }
+          }
+        }
+        for (const i of this.state.friends) {
+          const newPos = currentArr.findIndex((ev) => ev.id === i.id);
+          if (newPos == -1) {
+            currentArr.push(i);
+          }
+        }
+        this.setState({
+          friends: currentArr,
+        });
+        console.log(currentArr);
+        console.log(this.state.friends);
+      }
+    });
+
     this.statusChecker = () => {
-      setInterval(() => {
+      this.interval = setInterval(() => {
         const friends = Array.from(this.state.friends);
         for (let i of friends) {
-          this.context.emit("checkOnline", { id: i.id, nickname: i.name });
+          Socket.emit("checkOnline", { id: i.id, nickname: i.name });
         }
       }, 10000);
-      this.context.on("checkOnline", async (status) => {
-        document.querySelector(
-          `#${status.nickname}`
-        ).style.backgroundColor = `${status.status}`;
-      });
+    };
+    Socket.on("checkOnline", async (status) => {
+      document.querySelector(
+        `#${status.nickname}`
+      ).style.backgroundColor = `${status.status}`;
+    });
+    this.friendsPosition = (chatSelected) => {
+      const newArr = Array.from(this.state.friends),
+        nameDB = this.state.friends.findIndex(
+          (e) => e.id === parseInt(chatSelected)
+        );
+      console.log(chatSelected);
+      if (nameDB !== -1) {
+        console.log(this.state.friends[nameDB].name);
+        newArr.splice(nameDB, 1);
+        newArr.unshift(this.state.friends[nameDB]);
+        this.setState({
+          friends: newArr,
+        });
+        console.log(newArr);
+      }
     };
   }
 
@@ -270,16 +335,21 @@ class Chat extends React.Component {
       method: "GET",
     })
       .then((res) => res.json())
-      .then((data) => {
+      .then(async (data) => {
         console.log(data);
         this.setState({ user: data.data.nickname });
         this.context.emit("online", data.data.id);
+        setTimeout(() => {
+          this.reloadChats();
+        }, 3000);
+        setTimeout(() => {
+          this.requireLastUpdate();
+        }, 5000);
+        this.statusChecker();
+        console.log("==context==");
+        console.log(this.context);
+        console.log("==context==");
       });
-    this.reloadChats();
-    this.statusChecker();
-    console.log("==context==");
-    console.log(this.context);
-    console.log("==context==");
   }
   componentWillUnmount() {
     clearInterval(this.interval);
@@ -391,6 +461,9 @@ class Chat extends React.Component {
           defaultAv={defaultAv}
           chatSelected={this.state.chatSelected}
           user={this.state.user}
+          pos={this.state.pos}
+          friends={this.state.friends}
+          friendsPosition={this.friendsPosition}
         />
       </div>
     );

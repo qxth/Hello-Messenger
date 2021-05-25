@@ -3,13 +3,8 @@ import { hot } from "react-hot-loader";
 
 // #Material UI
 import {
-  IconButton,
-  Typography,
-  Toolbar,
-  AppBar,
-  Avatar,
-  Link,
-  Button,
+  IconButton, Typography, Toolbar, 
+  AppBar, Avatar, Link, Button,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 
