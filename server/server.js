@@ -57,10 +57,11 @@ io.adapter(redisAdapter({ host: "localhost", port: 6379 }));
 
 io.on("connection", (socket) => {
   let room, idFriend, idUser;
-  const friendsOrderSocket = () => {
-    redis.get(`friendsOrder_${idFriend}`, (err, data) => {
+  const friendsOrderSocket = (idF) => {
+    redis.get(`friendsOrder_${idF}`, (err, data) => {
       if (err) return console.error(err);
-      if (JSON.stringify(data) !== "null" || data !== null) {
+      if (JSON.stringify(data) === "null") 
+          return redis.set(`friendsOrder_${idF}`, JSON.stringify([{ id: idUser }]));
         console.log("updating in another chat my local chat");
         console.log("data", data);
         console.log("MyId:", idUser);
@@ -71,15 +72,10 @@ io.on("connection", (socket) => {
         if (posEl !== -1) {
           newArr.splice(posEl, 1);
           newArr.unshift(arrFriend[posEl]);
-          redis.set(`friendsOrder_${idFriend}`, JSON.stringify(newArr));
-        } else {
+          return redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
+        } 
           newArr.unshift({ id: idUser });
-          redis.set(`friendsOrder_${idFriend}`, JSON.stringify(newArr));
-        }
-      } else {
-        console.log("else and setted", [{ id: idUser }]);
-        redis.set(`friendsOrder_${idFriend}`, JSON.stringify([{ id: idUser }]));
-      }
+          redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
     });
   };
   socket.on("online", async (id) => {
@@ -157,7 +153,7 @@ io.on("connection", (socket) => {
       res = await redis.get(`dataInit_${idFriend}`),
       json = JSON.parse(res);
     console.log("checking room");
-    friendsOrderSocket();
+    friendsOrderSocket(idUser, idFriend);
     console.log("friendID:", idFriend);
     console.log("myid:", idUser);
     if (!roomId.has(json.socketID)) {
@@ -165,7 +161,10 @@ io.on("connection", (socket) => {
       const num = await redis.get(`notify_${room}_${idUser}`);
       console.log(num);
       console.log(typeof num);
-      if (num === "null") {
+      console.log(JSON.stringify(num))
+      console.log(typeof JSON.stringify(num))
+      if(isNaN(num)) console.log("NaN IS REALLL")
+      if (JSON.stringify(num) == "null" || isNaN(num)) {
         redis.set(`notify_${room}_${idUser}`, 1);
         console.log("num null");
         console.log("sending notify...", json.socketID);
@@ -185,6 +184,30 @@ io.on("connection", (socket) => {
       }
     }
   });
+  socket.on("acceptNewFriend", (idF) => {
+    redis
+      .get(`friendsOrder_${idUser}`, (err, data) => {
+        if (err) 
+          return console.log(err);
+       if (JSON.stringify(data) === "null") 
+          return redis.set(`friendsOrder_${idUser}`, JSON.stringify([{ id: idF }]));
+        console.log("data", data);
+        console.log("MyId:", idUser);
+        const arrFriend = JSON.parse(data),
+          newArr = Array.from(arrFriend),
+          posEl = arrFriend.findIndex((e) => e.id === idF);
+        console.log(posEl);
+        if (posEl !== -1) {
+          newArr.splice(posEl, 1);
+          newArr.unshift(arrFriend[posEl]);
+          redis.set(`friendsOrder_${idUser}`, JSON.stringify(newArr));
+          return friendsOrderSocket(idF);
+        } 
+          newArr.unshift({ id: idF });
+          redis.set(`friendsOrder_${idUser}`, JSON.stringify(newArr));
+          return friendsOrderSocket(idF);
+      });
+  })
   socket.on("message", async (resMsg) => {
     const msg = JSON.parse(resMsg);
     io.to(room).emit("message", msg);
@@ -204,24 +227,6 @@ io.on("connection", (socket) => {
         console.log(res);
         console.log("new status set..");
       });
-  });
-  socket.on("sendLastUpdate", (id) => {
-    redis.get(`friendsOrder_${idUser}`, (err, data) => {
-      if (err) return console.error(err);
-      if (data !== null) {
-        console.log("updating in another chat my local chat");
-        console.log(data);
-        console.log(idUser);
-        const arrFriend = JSON.parse(data),
-          newArr = Array.from(arrFriend),
-          posEl = arrFriend.findIndex((e) => e.id === id);
-        if (arrFriend !== -1) {
-          newArr.splice(posEl, 1);
-          newArr.unshift(arrFriend[posEl]);
-          redis.set(`friendsOrder_${idUser}`, newArr);
-        }
-      }
-    });
   });
   socket.on("requireLastUpdate", async () => {
     redis.get(`friendsOrder_${idUser}`, (err, data) => {

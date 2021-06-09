@@ -17,6 +17,10 @@ import {
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 
+
+//#Extras
+import catIcon from './../img/cat-icon.png'
+
 const styles = {
   container: {
     backgroundColor: "#1f2428",
@@ -51,7 +55,15 @@ class Notfound extends React.Component {
     const { classes } = this.props;
     return (
       <div className={classes.container}>
-        <h1>404</h1>
+        <h1>
+        4
+          <img
+            style={{ width: 130, height: 130, borderRadius: "50%" }}
+            alt="HelloMessengerLogo"
+            src={catIcon}
+          />
+        4
+        </h1>
         <p>
           Page does not exist! Unless you were looking for this error page, In
           which case you find it!

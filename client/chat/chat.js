@@ -25,11 +25,11 @@ import {
   Menu as MenuIcon,
   AccountCircle,
   MoreVert as MoreVertIcon,
-  PersonAdd as PersonAddIcon,
+  Person as PersonIcon,
 } from "@material-ui/icons";
 
 //#Extras
-import Talk from "./talkChat";
+import HandleScreen from "./handleScreen";
 import MenuHome from "./menuHome";
 import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
@@ -51,7 +51,7 @@ const styles = {
   },
   fondo: {
     gridTemplateRows: "100%",
-    gridTemplateColumns: "24% 76%",
+    gridTemplateColumns: "20% 80%",
     backgroundColor: "#1f2428",
     minHeight: "100vh",
     display: "grid",
@@ -72,11 +72,12 @@ const styles = {
     display: "flex",
     borderTop: "1px solid #30383d",
     alignItems: "center",
-    paddingLeft: "20px",
     height: "72px",
+  },
+  select: {
     '&[aria-selected="true"]': {
       color: "rgb(199, 204, 207)",
-      backgroundColor: "rgba(50, 55, 57, 0.7)",
+      backgroundColor: "rgba(50, 55, 57, 0.2)",
       WebkitTransition: ".4s all ease-in-out",
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
@@ -87,6 +88,7 @@ const styles = {
     cursor: "pointer",
     color: "#9d9ea3",
     padding: 20,
+    paddingLeft: 10,
     display: "flex",
     '&[aria-selected="true"]': {
       color: "rgb(199, 204, 207)",
@@ -153,6 +155,7 @@ class Chat extends React.Component {
       selected: false,
       chatSelected: false,
       friends: [],
+      actualChat: [],
       canal: true,
       user: null,
       anchorEl: null,
@@ -170,68 +173,53 @@ class Chat extends React.Component {
     this.aria = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
-      role.forEach((role) => {
-        role.setAttribute("aria-selected", false);
-      });
-      e.target.setAttribute("aria-selected", true);
-      const nameDB = this.state.friends.filter((e) => e.name === name);
-      console.log(nameDB);
-      this.setState({ chatSelected: "SearchFriends" });
-      if (nameDB.length === 0) return this.setState({ canal: false });
-      this.setState({
-        canal: true,
-        pos: `${nameDB[0].id}`,
-        chatSelected: `${nameDB[0].name}`,
-      });
-      fetch(routesApi.getChat, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: nameDB[0].id }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          this.context.emit("create", { room: data.idChat, id: nameDB[0].id });
-          const newFriends = Array.from(this.state.friends);
-          newFriends[newFriends.findIndex((e) => e.id === nameDB[0].id)] = {
-            id: nameDB[0].id,
-            name: nameDB[0].name,
-            notify: 0,
-          };
-          this.setState({
-            friends: newFriends,
-          });
-          document.getElementById(`${nameDB[0].id}`).style.opacity = "0";
-          const mensajesDiv = document.getElementById("mensajes");
-          if (data.error) return (mensajesDiv.innerHTML = "");
-          const json = data.dataChat.ChatData;
-          json.shift();
-          mensajesDiv.innerHTML = "";
-          for (let data of json) {
-            let img = document.createElement("img");
-            img.src = `${defaultAv}`;
-            img.width = "24";
-            img.height = "24";
-            img.style.borderRadius = "50%";
-            img.style.marginTop = "1%";
-            img.style.marginLeft = "1%";
-            img.style.marginRight = "6px";
-            let node = document.createElement("LI");
-            let textnode = document.createTextNode(data.user);
-            let node2 = document.createElement("LI");
-            let textnode2 = document.createTextNode(data.message);
-            node2.style.marginTop = "10px";
-            node2.style.marginLeft = "28px";
-
-            node.appendChild(img);
-            node.appendChild(textnode);
-            node2.appendChild(textnode2);
-
-            mensajesDiv.appendChild(node);
-            mensajesDiv.appendChild(node2);
-          }
+      if (e.target.getAttribute("aria-selected") === "false") {
+        role.forEach((role) => {
+          role.setAttribute("aria-selected", false);
         });
+        e.target.setAttribute("aria-selected", true);
+        const nameDB = this.state.friends.filter((e) => e.name === name);
+        console.log(nameDB);
+        this.setState({ chatSelected: "SearchFriends" });
+        if (nameDB.length === 0) return this.setState({ canal: false });
+        this.setState({
+          canal: true,
+          pos: `${nameDB[0].id}`,
+          chatSelected: `${nameDB[0].name}`,
+        });
+        fetch(routesApi.getChat, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id: nameDB[0].id }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            this.context.emit("create", {
+              room: data.idChat,
+              id: nameDB[0].id,
+            });
+            const newFriends = Array.from(this.state.friends);
+            newFriends[newFriends.findIndex((e) => e.id === nameDB[0].id)] = {
+              id: nameDB[0].id,
+              name: nameDB[0].name,
+              notify: 0,
+            };
+            document.getElementById(`${nameDB[0].id}`).style.opacity = "0";
+            if (data.error) return;
+            this.setState({
+              friends: newFriends,
+              actualChat: [],
+            });
+            const json = data.dataChat.ChatData;
+            json.shift();
+            this.setState({
+              actualChat: json,
+              friends: newFriends,
+            });
+          });
+      }
     };
     this.reloadChats = () => {
       fetch(routesApi.getAllFriends)
@@ -348,6 +336,7 @@ class Chat extends React.Component {
         this.statusChecker();
         console.log("==context==");
         console.log(this.context);
+        console.log(this.props);
         console.log("==context==");
       });
   }
@@ -413,23 +402,37 @@ class Chat extends React.Component {
           </AppBar>
 
           <div
-            id="friends"
+            id={"friends"}
             className={classes.friends}
             onClick={this.aria}
             role="region"
           >
-            <div aria-selected={this.state.selected} className={classes.tools}>
-              <PersonAddIcon size="small" style={{ marginRight: 10 }} />
-              <Typography variant="body1">Add Friends</Typography>
+            <div className={classes.tools}>
+              <div
+                aria-selected={this.state.selected}
+                role="option"
+                style={{
+                  position: "absolute",
+                  width: "20%",
+                  height: "11%",
+                }}
+              ></div>
+              <PersonIcon size="small" style={{ marginRight: 10 }} />
+              <Typography variant="body1">Friends</Typography>
             </div>
             {this.state.friends.map((val) => (
-              <div
-                key={val.name}
-                name={val.name}
-                aria-selected="false"
-                role="option"
-                className={classes.aria}
-              >
+              <div key={val.name} className={classes.aria}>
+                <div
+                  aria-selected="false"
+                  role="option"
+                  name={val.name}
+                  style={{
+                    position: "absolute",
+                    width: "20%",
+                    height: "11%",
+                  }}
+                  className={classes.select}
+                ></div>
                 <div
                   id={val.name}
                   className={classes.status}
@@ -454,7 +457,7 @@ class Chat extends React.Component {
             ))}
           </div>
         </div>
-        <Talk
+        <HandleScreen
           canal={this.state.canal}
           reloadChats={this.reloadChats}
           socket={this.context}
@@ -464,6 +467,8 @@ class Chat extends React.Component {
           pos={this.state.pos}
           friends={this.state.friends}
           friendsPosition={this.friendsPosition}
+          actualChat={this.state.actualChat}
+          requireLastUpdate={this.requireLastUpdate}
         />
       </div>
     );

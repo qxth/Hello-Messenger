@@ -3,9 +3,16 @@ import { hot } from "react-hot-loader";
 
 //Material UI
 import {
-  TextField, Container, Typography, List, 
-  ListItem, ListItemText, AppBar,
-  InputAdornment, IconButton, Divider,
+  TextField,
+  Container,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  AppBar,
+  InputAdornment,
+  IconButton,
+  Divider,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import {
@@ -18,8 +25,6 @@ import {
 //Extras
 import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
-import Search from "./searchFriends";
-import MenuHome from "./menuHome";
 
 const styles = {
   channel: {
@@ -68,7 +73,17 @@ const styles = {
       padding: 0,
       whiteSpace: "pre-wrap",
       overflowWrap: "break-word",
+      "& > img": {
+        borderRadius: "50%",
+        marginTop: "1%",
+        marginLeft: "1%",
+        marginRight: 6,
+      },
     },
+  },
+  liMensajes: {
+    marginTop: 10,
+    marginLeft: 28,
   },
   boxMensajes: {
     border: "2px solid #3c4144",
@@ -114,8 +129,7 @@ const styles = {
     width: "100%",
   },
 };
-
-class Talk extends React.Component {
+class Messenger extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -138,17 +152,23 @@ class Talk extends React.Component {
             date: new Date(),
           };
         document.getElementById("message").value = "";
-        setTimeout(()=>{this.props.friendsPosition(this.props.pos)}, 1000);
+        setTimeout(() => {
+          this.props.friendsPosition(this.props.pos);
+        }, 1000);
+        setTimeout(() => {
           socket.emit("checkRoom");
-          socket.emit("sendLastUpdateLocal", this.props.friends)
-          socket.emit("message", JSON.stringify(data));
+          socket.emit("sendLastUpdateLocal", this.props.friends);
+        }, 2000);
+        socket.emit("message", JSON.stringify(data));
+        const chatBox = document.querySelector("#mensajes");
+        chatBox.scrollTop = chatBox.scrollHeight;
       }
     };
     socket.on("checkRoom", (n) => {
       const data = document.getElementById(`${n.id}`);
       data.style.opacity = "1";
       data.innerHTML = `${n.notify}`;
-      this.props.friendsPosition(n.id)
+      this.props.friendsPosition(n.id);
     });
 
     socket.on("message", (msg) => {
@@ -161,10 +181,10 @@ class Talk extends React.Component {
       img.style.marginLeft = "1%";
       img.style.marginRight = "6px";
 
-      let node = document.createElement("LI");
-      let textnode = document.createTextNode(`${msg.user}`);
-      let node2 = document.createElement("LI");
-      let textnode2 = document.createTextNode(`${msg.message}`);
+      const node = document.createElement("LI"),
+        textnode = document.createTextNode(`${msg.user}`),
+        node2 = document.createElement("LI"),
+        textnode2 = document.createTextNode(`${msg.message}`);
       node2.style.marginTop = "9px";
       node2.style.marginLeft = "30px";
 
@@ -172,8 +192,8 @@ class Talk extends React.Component {
       node.appendChild(textnode);
       node2.appendChild(textnode2);
 
-      document.getElementById("mensajes").appendChild(node);
-      document.getElementById("mensajes").appendChild(node2);
+      document.querySelector("#mensajes").appendChild(node);
+      document.querySelector("#mensajes").appendChild(node2);
       const chatBox = document.querySelector("#boxMensajes");
       chatBox.scrollTop = chatBox.scrollHeight;
       this.NoTyp();
@@ -210,14 +230,10 @@ class Talk extends React.Component {
     });
 
     this.IsTyping = (e) => {
-      if (!this.state.isTyping) {
-        this.setState({ isTyping: true });
-        this.Typ();
-      } else {
-        this.NoTyp();
-      }
+      if (this.state.isTyping) return this.NoTyp();
+      this.setState({ isTyping: true });
+      this.Typ();
     };
-
     this.onEmojiClick = (e, emojiObject) => {
       let chosenEmoji = null;
       chosenEmoji = emojiObject;
@@ -228,97 +244,95 @@ class Talk extends React.Component {
         return this.setState({ ShowEmojis: true });
       this.setState({ ShowEmojis: false });
     };
-    this.selectChat = () => {
-      const { classes } = this.props;
-      if (this.props.canal)
-        return (
-          <React.Fragment>
-            <div className={classes.channel}>
-              <Typography variant="h6">{this.props.chatSelected}</Typography>
-              <IconButton
-                color="inherit"
-                style={{
-                  color: "gray",
-                  display: "flex",
-                  alignSelf: "flex-end",
-                }}
-              >
-                <CallIcon style={{ marginRight: 10 }} />
-                <VideoCallIcon style={{ marginRight: 10 }} />
-              </IconButton>
-            </div>
-            <div id="boxMensajes" className={classes.boxMensajes}>
-              <ul className={classes.mensajes} id="mensajes"></ul>
-              {this.state.ShowEmojis ? (
-                <Picker
-                  onEmojiClick={this.onEmojiClick}
-                  pickerStyle={{ bottom: "60px", position: "fixed" }}
-                />
-              ) : (
-                <></>
-              )}
-              <div className={classes.Typer}>
-                <div>
-                  <Typography
-                    className={classes.Typ}
-                    id="istyping"
-                  ></Typography>
-                </div>
-                <div className={classes.tab}>
-                  <form
-                    style={{ display: "contents" }}
-                    required
-                    onSubmit={this.submit}
-                  >
-                    <IconButton color="inherit" onClick={this.icons}>
-                      <InsertEmoticonIcon style={{ color: "#828689" }} />
-                    </IconButton>
-                    <TextField
-                      type="text"
-                      id="message"
-                      autoComplete="off"
-                      name="message"
-                      inputProps={{ maxLength: 500, minLength: 1 }}
-                      placeholder="Envie un mensaje"
-                      multiline
-                      onKeyUp={this.IsTyping}
-                      className={classes.input}
-                    />
-                    <IconButton type="submit">
-                      <SendIcon style={{ color: "#828689" }} />
-                    </IconButton>
-                  </form>
-                </div>
-              </div>
-            </div>
-          </React.Fragment>
-        );
-      return (
-        <Search
-          socket={this.props.socket}
-          reloadChats={this.props.reloadChats}
-        />
-      );
-    };
   }
   componentDidMount() {
-    this.scrollInterval= setInterval(() => {
+    this.checkScroll = setInterval(() => {
       const chatBox = document.querySelector("#boxMensajes");
-      if (chatBox) {
+      if (chatBox.scrollHeight) {
         chatBox.scrollTop = chatBox.scrollHeight;
+        clearInterval(this.checkScroll);
       }
-      console.log(this.props.chatSelected)
-    }, 3000);
+    }, 1000);
   }
   componentWillUnmount() {
-    clearInterval(this.scrollInterval);
+    this.props.socket.off("message");
+    this.props.socket.off("checkRoom");
+    this.props.socket.off("sendLastUpdateLocal");
+    this.props.socket.off("NoTyping");
+    this.props.socket.off("typing");
   }
   render() {
     const { classes } = this.props;
     return (
-      <div>{this.props.chatSelected ? <this.selectChat /> : <MenuHome />}</div>
+      <React.Fragment>
+        <div className={classes.channel}>
+          <Typography variant="h6">{this.props.chatSelected}</Typography>
+          <IconButton
+            color="inherit"
+            style={{
+              color: "gray",
+              display: "flex",
+              alignSelf: "flex-end",
+            }}
+          >
+            <CallIcon style={{ marginRight: 10 }} />
+            <VideoCallIcon style={{ marginRight: 10 }} />
+          </IconButton>
+        </div>
+        <div id={"boxMensajes"} className={classes.boxMensajes}>
+          <ul className={classes.mensajes} id={"mensajes"}>
+            {this.props.actualChat.map((e, index) => (
+              <React.Fragment key={index}>
+                <li>
+                  <img src={defaultAv} width="24" height="24" />
+                  {e.user}
+                </li>
+                <li className={classes.liMensajes}>{e.message}</li>
+              </React.Fragment>
+            ))}
+          </ul>
+          {this.state.ShowEmojis ? (
+            <Picker
+              onEmojiClick={this.onEmojiClick}
+              pickerStyle={{ bottom: "60px", position: "fixed" }}
+            />
+          ) : (
+            <></>
+          )}
+          <div className={classes.Typer}>
+            <div>
+              <Typography className={classes.Typ} id="istyping"></Typography>
+            </div>
+            <div className={classes.tab}>
+              <form
+                style={{ display: "contents" }}
+                required
+                onSubmit={this.submit}
+              >
+                <IconButton color="inherit" onClick={this.icons}>
+                  <InsertEmoticonIcon style={{ color: "#828689" }} />
+                </IconButton>
+                <TextField
+                  type="text"
+                  id="message"
+                  autoComplete="off"
+                  name="message"
+                  inputProps={{ maxLength: 500, minLength: 1 }}
+                  placeholder="Envie un mensaje"
+                  multiline
+                  onKeyUp={this.IsTyping}
+                  className={classes.input}
+                />
+                <IconButton type="submit">
+                  <SendIcon style={{ color: "#828689" }} />
+                </IconButton>
+              </form>
+            </div>
+          </div>
+        </div>
+      </React.Fragment>
     );
   }
 }
 
-export default hot(module)(withStyles(styles)(Talk));
+export default hot(module)(withStyles(styles)(Messenger));
