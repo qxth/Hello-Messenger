@@ -21,20 +21,23 @@ import { withStyles } from "@material-ui/core/styles";
 
 //#Extras
 import routesApi from "./../../server/utils/routes-api";
+import formBackground from "./../img/formBackground.jpg";
 
 const styles = {
   container: {
     height: "100vh",
     backgroundImage:
-      "url(https://epicbootstrap.com/freebies/snippets/login-form-dark/assets/img/star-sky.jpg)",
+      `url(${formBackground})`,
     backgroundSize: "cover",
     backgroundPosition: "bottom",
   },
   form: {
     maxWidth: "320px",
     width: "90%",
-    backgroundColor: "#1e2833",
+    backgroundColor: "rgba(33, 37, 48, 0.7)",
     padding: "40px",
+    backdropFilter: "blur(10px)",
+    "-webkit-backdrop-filter": "blur(10px)",
     borderRadius: "4px",
     transform: "translate(-50%, -50%)",
     position: "absolute",
@@ -47,7 +50,7 @@ const styles = {
     marginBottom: "1rem",
   },
   formControl: {
-    background: "#1e2833",
+    background: "transparent",
     border: "none",
     borderBottom: "1px solid #434a52",
     borderRadius: "0",
@@ -164,6 +167,7 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="text"
               id="user"
@@ -172,6 +176,7 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="password"
               name="password"
@@ -181,6 +186,7 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="password"
               name="password"
@@ -190,6 +196,7 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <select
+              required
               id="question"
               style={{ width: "100%" }}
               className={classes.formControl}
@@ -203,6 +210,7 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="text"
               id="res"

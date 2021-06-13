@@ -72,10 +72,12 @@ io.on("connection", (socket) => {
         if (posEl !== -1) {
           newArr.splice(posEl, 1);
           newArr.unshift(arrFriend[posEl]);
+          console.log("ifarr", newArr)
           return redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
         } 
-          newArr.unshift({ id: idUser });
+          newArr.unshift({ id: idUserd });
           redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
+          console.log("notifarr", newArr)
     });
   };
   socket.on("online", async (id) => {
@@ -153,7 +155,7 @@ io.on("connection", (socket) => {
       res = await redis.get(`dataInit_${idFriend}`),
       json = JSON.parse(res);
     console.log("checking room");
-    friendsOrderSocket(idUser, idFriend);
+    friendsOrderSocket(idFriend);
     console.log("friendID:", idFriend);
     console.log("myid:", idUser);
     if (!roomId.has(json.socketID)) {
@@ -255,6 +257,6 @@ io.on("connection", (socket) => {
   });
 });
 
-const appl = server.listen(app.get("port"), () => {
+const appl = server.listen(app.get("port"),() => {
   console.log(`Server on port ${app.get("port")}`);
 });

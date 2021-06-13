@@ -19,19 +19,22 @@ import { withStyles } from "@material-ui/core/styles";
 
 //# Extras
 import routes from "./../../server/utils/routes-api";
+import formBackground from "./../img/formBackground.jpg";
 
 const styles = {
   container: {
     height: "100vh",
     backgroundImage:
-      "url(https://epicbootstrap.com/freebies/snippets/login-form-dark/assets/img/star-sky.jpg)",
+      `url(${formBackground})`,
     backgroundSize: "cover",
     backgroundPosition: "bottom",
   },
   form: {
     maxWidth: "320px",
     width: "90%",
-    backgroundColor: "#1e2833",
+    backgroundColor: "rgba(33, 37, 48, 0.7)",
+    backdropFilter: "blur(10px)",
+    "-webkit-backdrop-filter": "blur(10px)",
     padding: "40px",
     borderRadius: "4px",
     transform: "translate(-50%, -50%)",
@@ -53,7 +56,7 @@ const styles = {
     outline: "none",
     color: "inherit",
     display: "block",
-    width: "100%",
+    width: "92%",
     height: "calc(2.25rem + 2px)",
     padding: ".375rem .75rem",
     fontSize: "1rem",
@@ -143,6 +146,7 @@ class Login extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="text"
               id="user"
@@ -151,6 +155,7 @@ class Login extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              required
               className={classes.formControl}
               type="password"
               name="password"

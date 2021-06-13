@@ -264,6 +264,7 @@ class SearchFriends extends React.Component {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
         .then((data) => {
+          console.log("loading stash friends...")
           console.log(data);
           this.setState({stash: []});
           for (let i of data.result) {

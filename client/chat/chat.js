@@ -119,7 +119,7 @@ const styles = {
     overflowY: "auto",
   },
   menu: {
-    "&>div": {
+    "&>.MuiPopover-paper": {
       top: "39px !important",
       left: "160px !important",
       color: "#fff",
@@ -140,7 +140,7 @@ const styles = {
     alignItems: "center",
     width: 20,
     position: "absolute",
-    right: "78%",
+    right: "81%",
     justifyContent: "center",
     display: "flex",
     height: 20,
@@ -361,16 +361,17 @@ class Chat extends React.Component {
               color="inherit"
               style={{ display: "flex", alignSelf: "flex-end" }}
               onClick={this.handleClick}
+              aria-controls="simple-menu" 
+              aria-haspopup="true"
             >
               <MoreVertIcon />
             </IconButton>
             <Menu
-              id="fade-menu"
+              id={"fade-menu"}
               anchorEl={this.state.anchorEl}
               keepMounted
               open={open}
               onClose={this.handleClose}
-              TransitionComponent={Fade}
               className={classes.menu}
             >
               <MenuItem onClick={this.handleClose}>
