@@ -4,8 +4,6 @@ import { BrowserRouter } from "react-router-dom";
 import Router from "./Router";
 import { MuiThemeProvider, withStyles } from "@material-ui/core/styles";
 import { CookiesProvider } from 'react-cookie';
-import {SocketContext} from './ContextProvider';
-import {Socket} from "./chat/Socket";
 
 const styles = (tema) => ({
   "@global": {
@@ -22,13 +20,11 @@ const App = () => {
   return (
     <React.Fragment>
       <div>
-        <SocketContext.Provider value={Socket}>
           <CookiesProvider>
             <BrowserRouter>
               <Router />
             </BrowserRouter>
           </CookiesProvider>
-        </SocketContext.Provider>
       </div>
     </React.Fragment>
   );

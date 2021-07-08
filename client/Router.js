@@ -8,7 +8,6 @@ import Register from "./register/register";
 import Home from "./views/home";
 import LogOut from "./views/logOut";
 import NotFound from "./views/notFound";
-
 // Extras
 import routerApi from "./../server/utils/routes-api";
 

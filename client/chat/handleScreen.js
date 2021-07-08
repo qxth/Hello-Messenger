@@ -17,7 +17,7 @@ class HandleScreen extends React.Component {
   }
   render() {
     return (
-      <div>{this.props.chatSelected ? <this.selectChat /> : <MenuHome />}</div>
+      <div>{this.props.chatSelected ? <this.selectChat /> : <MenuHome {...this.props}/>}</div>
     );
   }
 }

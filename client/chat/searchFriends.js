@@ -53,6 +53,24 @@ const styles = {
     ".MuiButton-root:hover": {
       backgroundColor: "#5b6eae",
     },
+    ".button-red":{
+      backgroundColor: "rgba(67, 181, 129, 0.8)",
+      "&:hover":{
+        backgroundColor: "rgba(67, 181, 129, 0.6)"
+      },
+      "&:active":{
+        backgroundColor: "rgba(67, 181, 129, 0.4)"
+      }
+    },
+    ".button-green":{
+      backgroundColor: "rgba(240, 71, 71, 0.8)",
+      "&:hover":{
+        backgroundColor: "rgba(240, 71, 71, 0.6)"
+      },
+      "&:active":{
+       backgroundColor: "rgba(240, 71, 71, 0.4)" 
+      }
+    },
     ".MuiInputBase-root": {},
   },
   fondo: {
@@ -225,11 +243,12 @@ class SearchFriends extends React.Component {
     })
     this.accept = (e) => {
       e.preventDefault()
-      const accept = e.target.childNodes[0].value,
-        nameDB = this.state.stash.filter(
-        (t) => t.id === isNaN(accept) ? parseInt(accept) : accept
+      const num = e.target.childNodes[0].defaultValue,
+        accept = isNaN(num) ? -1 : num,
+        nameDB = this.state.stash.find(
+        (e) => e.id == accept
       );
-      console.log(document.querySelector("#accept").value)
+        console.log("default", accept)
       console.log(nameDB)
       console.log(nameDB.length)
       if(nameDB.length !== 0){
@@ -238,13 +257,13 @@ class SearchFriends extends React.Component {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ idFriend: nameDB[0].id }),
+          body: JSON.stringify({ idFriend: nameDB.id }),
         }).then((res) => {
           if(res.status === 200){
-            console.log(nameDB[0].id)
+            console.log("from filter", nameDB.id)
             setTimeout(() => {
-              socket.emit("updateService", nameDB[0].id)
-              socket.emit("acceptNewFriend", nameDB[0].id)
+              socket.emit("updateService", nameDB.id)
+              socket.emit("acceptNewFriend", nameDB.id)
             }, 1000)
             setTimeout(() => {
               this.loadFriends();
@@ -278,9 +297,10 @@ class SearchFriends extends React.Component {
     this.cancel = (e) => {
       e.preventDefault()
       console.log(e)
-      const cancel = e.target.childNodes[0].value,
-       nameDB = this.state.stash.filter(
-        (t) => t.id === isNaN(accept) ? parseInt(cancel) : cancel
+      const num = e.target.childNodes[0].defaultValue,
+        cancel = isNaN(num) ? -1 : num,
+        nameDB = this.state.stash.find(
+        (e) => e.id == cancel
       );
       console.log(nameDB);
       if(nameDB.length !== 0){
@@ -289,7 +309,7 @@ class SearchFriends extends React.Component {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ idFriend: nameDB[0].id }),
+          body: JSON.stringify({ idFriend: nameDB.id }),
         })
         .then((e) => {
           if(e.ok){
@@ -332,20 +352,18 @@ class SearchFriends extends React.Component {
                 </div>
                 <div style={{display:"flex"}}>
                   <form onSubmit={this.accept}>
-                    <input id={"accept"} style={{display:"none"}} defaultValue={e.id}/>
+                    <input  style={{display:"none"}} defaultValue={e.id}/>
                     <button 
-                      className="MuiButtonBase-root MuiButton-root MuiButton-text" 
-                      style={{backgroundColor: "rgb(67, 181, 129)"}}
+                      className="button-red MuiButtonBase-root MuiButton-root MuiButton-text" 
                       type="submit"
                     >
                       Añadir
                     </button>
                   </form>
                   <form onSubmit={this.cancel}>
-                    <input id={"cancel"} style={{display:"none"}} defaultValue={e.id}/>
+                    <input style={{display:"none"}} defaultValue={e.id}/>
                     <button 
-                      className="MuiButtonBase-root MuiButton-root MuiButton-text" 
-                      style={{backgroundColor: "rgb(240, 71, 71)"}}
+                      className="button-green MuiButtonBase-root MuiButton-root MuiButton-text" 
                       type="submit"
                     >
                       Cancelar

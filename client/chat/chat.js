@@ -33,8 +33,8 @@ import HandleScreen from "./handleScreen";
 import MenuHome from "./menuHome";
 import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
+import Messenger from "./messenger";
 import { Socket } from "./Socket";
-import { SocketContext } from "../ContextProvider";
 
 const styles = {
   "@global": {
@@ -82,6 +82,16 @@ const styles = {
       MozTransition: ".4s all ease-in-out",
       OTransition: ".4s all ease-in-out",
       transition: ".4s all ease-in-out",
+    },
+    '&[aria-selected="false"]': {
+      '&:hover':{
+        color: "rgba(199, 204, 207, 0.8)",
+        backgroundColor: "rgba(50, 55, 57, 0.1)",
+        WebkitTransition: ".4s all ease-in-out",
+        MozTransition: ".4s all ease-in-out",
+        OTransition: ".4s all ease-in-out",
+        transition: ".4s all ease-in-out",
+      }
     },
   },
   tools: {
@@ -147,7 +157,6 @@ const styles = {
   },
 };
 class Chat extends React.Component {
-  static contextType = SocketContext;
   constructor(props) {
     super(props);
     this.state = {
@@ -196,7 +205,7 @@ class Chat extends React.Component {
         })
           .then((res) => res.json())
           .then((data) => {
-            this.context.emit("create", {
+            Socket.emit("create", {
               room: data.idChat,
               id: nameDB[0].id,
             });
@@ -221,6 +230,15 @@ class Chat extends React.Component {
           });
       }
     };
+    this.checkRoom = () => {
+      Socket.emit("checkRoom");
+    }
+    Socket.on("checkRoom", (n) => {
+      const data = document.getElementById(`${n.id}`);
+      data.style.opacity = "1";
+      data.innerHTML = `${n.notify}`;
+      this.friendsPosition(n.id);
+    });
     this.reloadChats = () => {
       fetch(routesApi.getAllFriends)
         .then((res) => res.json())
@@ -326,7 +344,8 @@ class Chat extends React.Component {
       .then(async (data) => {
         console.log(data);
         this.setState({ user: data.data.nickname });
-        this.context.emit("online", data.data.id);
+        //Socket.emit("online", data.data.id);
+        Socket.emit("online", data.data.id);
         setTimeout(() => {
           this.reloadChats();
         }, 3000);
@@ -334,10 +353,6 @@ class Chat extends React.Component {
           this.requireLastUpdate();
         }, 5000);
         this.statusChecker();
-        console.log("==context==");
-        console.log(this.context);
-        console.log(this.props);
-        console.log("==context==");
       });
   }
   componentWillUnmount() {
@@ -461,7 +476,7 @@ class Chat extends React.Component {
         <HandleScreen
           canal={this.state.canal}
           reloadChats={this.reloadChats}
-          socket={this.context}
+          socket={Socket}
           defaultAv={defaultAv}
           chatSelected={this.state.chatSelected}
           user={this.state.user}
@@ -470,6 +485,7 @@ class Chat extends React.Component {
           friendsPosition={this.friendsPosition}
           actualChat={this.state.actualChat}
           requireLastUpdate={this.requireLastUpdate}
+          checkRoom={this.checkRoom}
         />
       </div>
     );

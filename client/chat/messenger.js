@@ -151,12 +151,12 @@ class Messenger extends React.Component {
             message: messageSubmit,
             date: new Date(),
           };
-        document.getElementById("message").value = "";
+        valInput.value = "";
         setTimeout(() => {
           this.props.friendsPosition(this.props.pos);
         }, 1000);
         setTimeout(() => {
-          socket.emit("checkRoom");
+          this.props.checkRoom()
           socket.emit("sendLastUpdateLocal", this.props.friends);
         }, 2000);
         socket.emit("message", JSON.stringify(data));
@@ -164,12 +164,6 @@ class Messenger extends React.Component {
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     };
-    socket.on("checkRoom", (n) => {
-      const data = document.getElementById(`${n.id}`);
-      data.style.opacity = "1";
-      data.innerHTML = `${n.notify}`;
-      this.props.friendsPosition(n.id);
-    });
 
     socket.on("message", (msg) => {
       let img = document.createElement("img");

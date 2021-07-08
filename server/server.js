@@ -25,14 +25,12 @@ app.set("port", 3000);
 app.use(permisoLogin.initialize());
 
 app.use(morgan("dev"));
-/*app.use(cors(
+app.use(cors(
 {
-  origin: [
-    'http://e6e4187872e9.ngrok.io/'
-  ]
+    origin: 'http://localhost:3000',
+    credentials: true
 }
 ))
-*/
 app.use(cookie());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -53,9 +51,10 @@ app.get("*", (req, res) => {
 const server = http.createServer(app);
 
 const io = socketIo(server);
+const chatUrl = io.of("/chat")
 io.adapter(redisAdapter({ host: "localhost", port: 6379 }));
 
-io.on("connection", (socket) => {
+chatUrl.on("connection", (socket) => {
   let room, idFriend, idUser;
   const friendsOrderSocket = (idF) => {
     redis.get(`friendsOrder_${idF}`, (err, data) => {
@@ -95,9 +94,11 @@ io.on("connection", (socket) => {
   socket.on("checkOnline", async (id) => {
     redis.get(`status_${id.id}`, (err, res) => {
       if (err) return console.log(err);
+      /*
       console.log("===================");
       console.log(`${id.nickname}:${res}`);
       console.log("===================");
+      */
       if (res == "online")
         return socket.emit("checkOnline", {
           status: "green",
@@ -158,6 +159,8 @@ io.on("connection", (socket) => {
     friendsOrderSocket(idFriend);
     console.log("friendID:", idFriend);
     console.log("myid:", idUser);
+    console.log("has id?", roomId.has(json.socketID))
+    console.log("room", room)
     if (!roomId.has(json.socketID)) {
       socket.leave(room);
       const num = await redis.get(`notify_${room}_${idUser}`);
@@ -170,7 +173,7 @@ io.on("connection", (socket) => {
         redis.set(`notify_${room}_${idUser}`, 1);
         console.log("num null");
         console.log("sending notify...", json.socketID);
-        socket
+        chatUrl
           .to(`${json.socketID}`)
           .emit("checkRoom", { notify: 1, id: idUser });
         socket.join([room]);
@@ -178,7 +181,7 @@ io.on("connection", (socket) => {
       } else {
         redis.set(`notify_${room}_${idUser}`, parseInt(num) + 1);
         console.log("sending notify...", json.socketID);
-        socket
+        chatUrl
           .to(`${json.socketID}`)
           .emit("checkRoom", { notify: parseInt(num) + 1, id: idUser });
         socket.join([room]);
@@ -212,12 +215,12 @@ io.on("connection", (socket) => {
   })
   socket.on("message", async (resMsg) => {
     const msg = JSON.parse(resMsg);
-    io.to(room).emit("message", msg);
+    chatUrl.to(room).emit("message", msg);
     console.log(msg);
     const data = `,${resMsg}]}`,
-      parametros = [data, room],
-      sql = `update ChatStorage set ChatData = concat(substring_index(ChatData, "]", 1), ?) WHERE idChat=?`;
-    await query(sql, parametros);
+      sql = 'update ChatStorage set ChatData = '+
+      'concat(substring_index(ChatData, "]", 1), ?) WHERE idChat=?';
+    await query(sql, [data, room]);
   });
   socket.on("sendLastUpdateLocal", (friendArr) => {
     console.log(friendArr);
