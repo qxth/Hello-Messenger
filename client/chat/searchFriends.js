@@ -27,6 +27,7 @@ import {
 import Picker from "emoji-picker-react";
 import routesApi from "./../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
+import {Observable} from 'rxjs';
 
 const styles = {
   "@global": {
@@ -202,6 +203,8 @@ const styles = {
 };
 
 class SearchFriends extends React.Component {
+  acceptObservable;
+  observable;
   constructor(props) {
     super(props);
     this.state = {
@@ -260,25 +263,24 @@ class SearchFriends extends React.Component {
           body: JSON.stringify({ idFriend: nameDB.id }),
         }).then((res) => {
           if(res.status === 200){
-            console.log("from filter", nameDB.id)
-            setTimeout(() => {
-              socket.emit("updateService", nameDB.id)
-              socket.emit("acceptNewFriend", nameDB.id)
-            }, 1000)
-            setTimeout(() => {
-              this.loadFriends();
-              this.props.reloadChats();
-            }, 2000)
-            setTimeout(() => {this.props.requireLastUpdate()}, 3000)
+            socket.emit("acceptNewFriend", nameDB.id)
+            this.acceptObservable.subscribe({
+                next(x) { },
+                error(err) { console.error('something wrong occurred: ' + err); },
+                complete() { console.log('done'); }
+            });
+            socket.emit("updateService", nameDB.id)
           }
-            
         });
       }
     };
-    socket.on("updateService", () => {
-      setTimeout(() => {this.props.reloadChats()}, 2000);
-      setTimeout(() => {this.props.requireLastUpdate()}, 3000)
+  socket.on("updateService", () => {
+    this.observable.subscribe({
+      next(x) { },
+      error(err) { console.error('something wrong occurred: ' + err); },
+      complete() { console.log('done'); }
     });
+  });
     this.loadFriends = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
@@ -320,6 +322,17 @@ class SearchFriends extends React.Component {
     };
   }
   componentDidMount() {
+    this.acceptObservable = new Observable(subscriber => {
+      subscriber.next(this.props.reloadChats())
+      subscriber.next(this.loadFriends())
+      subscriber.next(this.props.requireLastUpdate());
+      subscriber.complete();
+    });
+    this.observable = new Observable(subscriber => {
+      subscriber.next(this.props.reloadChats())
+      subscriber.next(this.props.requireLastUpdate())
+      subscriber.complete()
+    })
     this.loadFriends();
     this.props.socket.emit("leaveRoom")
   }

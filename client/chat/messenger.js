@@ -25,6 +25,7 @@ import {
 //Extras
 import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
+import {Observable} from 'rxjs';
 
 const styles = {
   channel: {
@@ -130,6 +131,7 @@ const styles = {
   },
 };
 class Messenger extends React.Component {
+  observable;
   constructor(props) {
     super(props);
     this.state = {
@@ -139,10 +141,10 @@ class Messenger extends React.Component {
     const { socket } = this.props;
     this.submit = (e) => {
       e.preventDefault();
-      const valInput = document.querySelector("#message").value,
+      let valInput = document.querySelector("#message"),
         user = this.props.user;
-      if (valInput !== "") {
-        const messageSubmit = valInput
+      if (valInput.value !== "") {
+        let messageSubmit = valInput.value
             .split("\n")
             .join(" ")
             .replaceAll(/"/g, '"'),
@@ -152,13 +154,11 @@ class Messenger extends React.Component {
             date: new Date(),
           };
         valInput.value = "";
-        setTimeout(() => {
-          this.props.friendsPosition(this.props.pos);
-        }, 1000);
-        setTimeout(() => {
-          this.props.checkRoom()
-          socket.emit("sendLastUpdateLocal", this.props.friends);
-        }, 2000);
+        this.observable.subscribe({
+            next(x) { },
+            error(err) { console.error('something wrong occurred: ' + err); },
+            complete() { console.log('done'); }
+        });
         socket.emit("message", JSON.stringify(data));
         const chatBox = document.querySelector("#mensajes");
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -240,6 +240,14 @@ class Messenger extends React.Component {
     };
   }
   componentDidMount() {
+    this.observable = new Observable(subscriber => {
+      subscriber.next(this.props.friendsPosition(this.props.pos));
+      subscriber.next(() => {
+        this.props.checkRoom()
+        socket.emit("sendLastUpdateLocal", this.props.friends)
+      });
+      subscriber.complete();
+    });
     this.checkScroll = setInterval(() => {
       const chatBox = document.querySelector("#boxMensajes");
       if (chatBox.scrollHeight) {
@@ -308,9 +316,9 @@ class Messenger extends React.Component {
                 </IconButton>
                 <TextField
                   type="text"
-                  id="message"
+                  id={"message"}
                   autoComplete="off"
-                  name="message"
+                  name={"message"}
                   inputProps={{ maxLength: 500, minLength: 1 }}
                   placeholder="Envie un mensaje"
                   multiline

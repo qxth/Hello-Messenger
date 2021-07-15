@@ -35,6 +35,7 @@ import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
 import Messenger from "./messenger";
 import { Socket } from "./Socket";
+import {Observable} from 'rxjs';
 
 const styles = {
   "@global": {
@@ -157,6 +158,7 @@ const styles = {
   },
 };
 class Chat extends React.Component {
+  observable;
   constructor(props) {
     super(props);
     this.state = {
@@ -345,14 +347,18 @@ class Chat extends React.Component {
         console.log(data);
         this.setState({ user: data.data.nickname });
         //Socket.emit("online", data.data.id);
+        this.observable = new Observable(subscriber => {
+          subscriber.next(this.reloadChats());
+          subscriber.next(this.requireLastUpdate());
+          subscriber.next(this.statusChecker());
+          subscriber.complete();
+        });
         Socket.emit("online", data.data.id);
-        setTimeout(() => {
-          this.reloadChats();
-        }, 3000);
-        setTimeout(() => {
-          this.requireLastUpdate();
-        }, 5000);
-        this.statusChecker();
+        this.observable.subscribe({
+            next(x) { },
+            error(err) { console.error('something wrong occurred: ' + err); },
+            complete() { console.log('done'); }
+        });
       });
   }
   componentWillUnmount() {
