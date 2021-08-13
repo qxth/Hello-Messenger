@@ -1,7 +1,7 @@
-const api = "/chatter/";
+const api = "/chatter/"
 const routes = {
-  createUser: `${api}createUser`,
-  iniciarSesion: `${api}login`,
+  createUser: `${api}createuser`,
+  logIn: `${api}login`,
   getAllFriends: `${api}friends`,
   stashFriends: `${api}stashfriends`,
   getChat: `${api}chat`,
@@ -9,7 +9,7 @@ const routes = {
   acceptFriends: `${api}acceptfriends`,
   rejectFriends: `${api}rejectfriends`,
   verificarToken: `${api}verificarToken`,
-  getQuestions: `${api}getquestions`,
+  getQuestions: `${api}questions`,
 };
 
 export default routes;
