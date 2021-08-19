@@ -143,7 +143,7 @@ class Register extends React.Component {
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.status !== 200) return alert("User is busy");
+          if (data.statusCode !== 200) return alert("User is busy");
           return this.props.history.push("/login");
         });
     };

@@ -1,6 +1,6 @@
 import { 
   Entity, Column, PrimaryGeneratedColumn,
-  ManyToOne
+  ManyToOne, JoinColumn
 } from 'typeorm';
 import {User} from './user.entity' 
 
@@ -16,5 +16,6 @@ export class StashFriends {
   idFriend: number;
 
   @ManyToOne(() => User, user => user.stashFriends, {eager: true})
+  @JoinColumn({name: 'id'})
   user: User;
 }

@@ -18,19 +18,13 @@ const Router = () => {
     fetch(`${routerApi.verificarToken}`, {
       method: "GET",
     })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("================");
-        console.log(data);
-        console.log("======================");
-        console.log(routes);
-        console.log(routerApi);
-        if (data.data !== false) return setRoutes(true);
+      .then((res) => {
+        if (res.status !== 401) return setRoutes(true);
       });
   });
   const Routes = () => {
-    if (routes == true)
-      return (
+    if (routes)
+      return ( 
         <React.Fragment>
           <Switch>
             <Route exact path="/" component={Home} />

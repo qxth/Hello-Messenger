@@ -97,16 +97,12 @@ class Header extends React.Component {
     fetch(`${routerApi.verificarToken}`, {
       method: "GET",
     })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("================");
-        console.log(data);
-        console.log("======================");
-        if (data.data !== false)
+      .then((res) => {
+        if (res.status !== 401)
           return this.setState({
             routes: true,
           });
-      });
+      }); 
   }
   render() {
     const { classes } = this.props;

@@ -48,8 +48,8 @@ export class ChatService {
 	async getAllFriends(req: Request, res: Response): Promise<any>{
 		const rows = await this.friendsRepository
 		.createQueryBuilder("Friends")
-		.innerJoinAndMapOne('Friends.user', User, 'user', 'Friends.idFriend = user.id')
-		.select(['user.id', 'user.nickname', 'Friends.idFriend'])
+		.innerJoin('Friends.user', 'user')
+		.select(['user.id', 'user.nickname'])
 		.where({idUser: req.user.id})
 		.getRawMany()
 		return res.status(HttpStatus.OK).json({
@@ -61,7 +61,7 @@ export class ChatService {
 		console.log(req.user)
 		const rows = await this.stashFriendsRepository
 		.createQueryBuilder("stashFriends")
-		.innerJoinAndMapOne('stashFriends.user', User, 'user', 'stashFriends.id = user.id')
+		.innerJoin('stashFriends.user', 'user')
 		.select(['user.id', 'user.nickname'])
 		.where({idFriend: req.user.id})
 		.getRawMany()

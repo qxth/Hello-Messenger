@@ -245,11 +245,12 @@ class Chat extends React.Component {
       fetch(routesApi.getAllFriends)
         .then((res) => res.json())
         .then(async (data) => {
+          console.log(data)
           this.setState({
             friends: [],
           });
-          for (let i of data.friendsData) {
-            Socket.emit("newMessage", { id: i.id, name: i.nickname });
+          for (let i of data.rows) {
+            Socket.emit("newMessage", { id: i.user_id, name: i.user_nickname });
           }
         });
     };
@@ -345,15 +346,14 @@ class Chat extends React.Component {
       .then((res) => res.json())
       .then(async (data) => {
         console.log(data);
-        this.setState({ user: data.data.nickname });
-        //Socket.emit("online", data.data.id);
+        this.setState({ user: data.nickname });
         this.observable = new Observable(subscriber => {
           subscriber.next(this.reloadChats());
           subscriber.next(this.requireLastUpdate());
           subscriber.next(this.statusChecker());
           subscriber.complete();
         });
-        Socket.emit("online", data.data.id);
+        Socket.emit("online", data.id);
         this.observable.subscribe({
             next(x) { },
             error(err) { console.error('something wrong occurred: ' + err); },

@@ -4,15 +4,17 @@ import devBundle from './devBundle';
 import * as cookie from "cookie-parser";
 import * as bodyParser from "body-parser";
 import { NestExpressApplication } from '@nestjs/platform-express';
-
+import { RedisIoAdapter } from './adapters/redis-io.adapters'
+import { IoAdapter } from '@nestjs/platform-socket.io';
 declare const module: any;
 
 async function bootstrap() {
   try{
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+    app.useWebSocketAdapter(new RedisIoAdapter(app));
     app.enableCors({
       origin: true,
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      methods: '*',
       credentials: true,
     });
     app.use((req, res, next) => {

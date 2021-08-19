@@ -14,10 +14,13 @@ import { Friends } from './entities/friends.entity'
 import {StashFriends} from './entities/stashFriends.entity'
 import template from './../index.js'
 import routes from './utils/routes-api'
+import {AppController} from './app.controller'
+import {EventsModule} from './events/events.module'
 
 @Module({
   imports: [
-	UserModule, ChatModule, AuthModule,
+	UserModule, ChatModule, 
+	AuthModule, EventsModule,
 	TypeOrmModule.forRoot({
 		type: "mysql",
 		host: "localhost",
@@ -31,10 +34,9 @@ import routes from './utils/routes-api'
 		synchronize: true
 	})
   ],
-  exports: [],
-  controllers: [],
-  providers: [],
+  //controllers: [AppController]
 })
+//export class AppModule{}
 
 export class AppModule implements NestModule{
 	  configure(consumer: MiddlewareConsumer) {

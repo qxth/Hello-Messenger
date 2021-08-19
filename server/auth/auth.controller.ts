@@ -15,6 +15,7 @@ export class AuthController {
   async login(@Req() req: Request, @Res() res: Response): Promise<any>{
    await this.authService.createToken(req.user, res)
   }
+  @UseGuards(AuthGuard('jwt'))
   @Get(routes.verificarToken)
   async verificarToken(@Req() req: Request, @Res() res: Response){
     return res.status(HttpStatus.OK).json(req.user)

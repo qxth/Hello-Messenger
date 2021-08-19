@@ -16,5 +16,6 @@ export class Friends {
   idFriend: number;
 
   @ManyToOne(() => User, user => user.friends, {eager: true})
+  @JoinColumn({name: 'idFriend'})
   user: User;
 }

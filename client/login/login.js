@@ -121,7 +121,7 @@ class Login extends React.Component {
     this.state = {};
     this.submit = (e) => {
       e.preventDefault();
-      fetch(routes.iniciarSesion, {
+      fetch(routes.logIn, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

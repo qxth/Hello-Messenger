@@ -5,7 +5,7 @@ import * as cookies from "cookie-parser";
 import keys from "./../../secret/keys";
 import { AuthService } from './auth.service';
 
-const cookieToken = (req ) => { 
+const cookieToken = (req) => { 
 	let token = null;
 	if (!req.cookies["jwt"]) return token;
 	token = req.cookies["jwt"];
@@ -16,9 +16,9 @@ const cookieToken = (req ) => {
 export class JwtStrategy extends PassportStrategy(Strategy){
 	constructor(private readonly authService: AuthService){ 
 		super({
+			jwtFromRequest: ExtractJwt.fromExtractors([cookieToken]),
 			secretOrKey: keys.tokenKey,
-			ignoreExpiration: false,
-			jwtFromRequest: ExtractJwt.fromExtractors([cookieToken])
+			ignoreExpiration: false
 		})
 	}
 	async validate(payload: any): Promise<any>{

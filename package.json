@@ -1,11 +1,10 @@
 {
-  "name": "chattest",
+  "name": "HelloMessenger",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon -e ts, js",
-    "test": "webpack --config webpack.config.client.js --watch",
+    "dev": "nodemon -e ts",
     "lint": "eslint '{src,apps,libs,test}/**/*.ts' --fix"
   },
   "dependencies": {
@@ -17,8 +16,11 @@
     "@nestjs/jwt": "^8.0.0",
     "@nestjs/passport": "^8.0.1",
     "@nestjs/platform-express": "8.0.4",
+    "@nestjs/platform-socket.io": "^8.0.6",
+    "@nestjs/platform-ws": "^8.0.6",
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "^8.0.1",
+    "@nestjs/websockets": "^8.0.6",
     "argon2": "^0.28.2",
     "bcrypt": "^5.0.1",
     "bcrypt-nodejs": "^0.0.3",
