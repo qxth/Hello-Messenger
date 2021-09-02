@@ -64,6 +64,13 @@ const styles = {
     fontSize: "1rem",
     lineHeight: 1.5,
     transition: "border-color .15s ease-in-out,box-shadow .15s ease-in-out",
+    "&>option": {
+      backgroundColor: "rgba(33, 37, 48, 0.7)",
+      color: "white",
+      cursor: "pointer",
+      border: "none",
+      outline: "none"
+    },
   },
   btnPrimary: {
     fontWeight: 400,
@@ -127,23 +134,25 @@ class Register extends React.Component {
       e.preventDefault();
       const dc = document,
         pass = dc.querySelector("#pass").value,
-        passR = dc.querySelector("#passR").value;
-      if (pass !== passR) return alert("Passwords do not match");
+        passR = dc.querySelector("#repeatPass").value;
+      if (pass !== passR) 
+        return alert("Passwords don't match");
       fetch(routesApi.createUser, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nickname: dc.querySelector("#user").value,
+          nickname: dc.querySelector("#username").value,
           password: pass,
-          pregunta: dc.querySelector("#question").value,
-          respuesta: dc.querySelector("#res").value,
-        }),
-      })
+          pregunta: parseInt(dc.querySelector("#question").value),
+          respuesta: dc.querySelector("#answer").value,
+          }),
+        })
         .then((res) => res.json())
         .then((data) => {
-          if (data.statusCode !== 200) return alert("User is busy");
+          if (data.status !== 201) 
+            return alert("Your username is taken please choose another");
           return this.props.history.push("/login");
         });
     };
@@ -169,8 +178,10 @@ class Register extends React.Component {
             <input
               required
               className={classes.formControl}
+              minLength={"3"}
+              maxLength={"30"}
               type="text"
-              id="user"
+              id={"username"}
               placeholder="Username"
             />
           </div>
@@ -178,9 +189,11 @@ class Register extends React.Component {
             <input
               required
               className={classes.formControl}
-              type="password"
-              name="password"
-              id="pass"
+              minLength={"8"}
+              maxLength={"50"}
+              type={"password"}
+              name={"password"}
+              id={"pass"}
               placeholder="Password"
             />
           </div>
@@ -188,17 +201,28 @@ class Register extends React.Component {
             <input
               required
               className={classes.formControl}
+              minLength={"8"}
+              maxLength={"50"}
               type="password"
-              name="password"
-              id="passR"
+              name={"password"}
+              id={"repeatPass"}
               placeholder="Repeat your password"
             />
           </div>
           <div className={classes.formGroup}>
             <select
               required
-              id="question"
-              style={{ width: "100%" }}
+              id={"question"}
+              style={{ 
+                width: "100%",
+                "&>*": {
+                  backgroundColor: "rgba(33, 37, 48, 0.7)",
+                  color: "white",
+                  cursor: "pointer",
+                  border: "none",
+                  outline: "none"
+                },
+              }}
               className={classes.formControl}
             >
               {this.state.questions.map((val) => (
@@ -210,16 +234,18 @@ class Register extends React.Component {
           </div>
           <div className={classes.formGroup}>
             <input
+              minLength={"1"}
+              maxLength={"100"}
               required
               className={classes.formControl}
               type="text"
-              id="res"
+              id={"answer"}
               placeholder="Answer"
             />
           </div>
           <div className={classes.formGroup}>
             <button className={classes.btnPrimary} type="submit">
-              Log In
+              Register
             </button>
           </div>
           <a href="/login" className={classes.forgot}>

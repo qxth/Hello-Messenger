@@ -46,8 +46,8 @@ export class UserService {
       return arr;
     });
     return res.status(HttpStatus.OK).json({
-        "status": 200,
-        "questions": questions
+        "questions": questions,
+        "status": 200
     })
   }
   

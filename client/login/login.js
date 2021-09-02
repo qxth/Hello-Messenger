@@ -127,12 +127,12 @@ class Login extends React.Component {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nickname: document.querySelector("#user").value,
+          nickname: document.querySelector("#username").value,
           password: document.querySelector("#pass").value,
         }),
       }).then((res) => {
         if (res.status === 200) return window.location.href = "/chat";
-        return alert("Ha ocurrido un error!");
+        return alert("An error has occurred");
       });
     };
   }
@@ -148,8 +148,10 @@ class Login extends React.Component {
             <input
               required
               className={classes.formControl}
+              minLength={"3"}
+              maxLength={"30"}
               type="text"
-              id="user"
+              id={"username"}
               placeholder="Username"
             />
           </div>
@@ -157,9 +159,11 @@ class Login extends React.Component {
             <input
               required
               className={classes.formControl}
+              minLength={"8"}
+              maxLength={"50"}
               type="password"
               name="password"
-              id="pass"
+              id={"pass"}
               placeholder="Password"
             />
           </div>

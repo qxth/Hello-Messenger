@@ -26,6 +26,7 @@ import {
 import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
 import {Observable} from 'rxjs';
+import SocketContext from './../socket/SocketContext'
 
 const styles = {
   channel: {
@@ -132,14 +133,14 @@ const styles = {
 };
 class Messenger extends React.Component {
   observable;
-  constructor(props) {
+  constructor(props, context) {
     super(props);
     this.state = {
       ShowEmojis: false,
       isTyping: false,
     };
-    const { socket } = this.props;
-    this.submit = (e) => {
+    const socket = context;
+    this.submitMessage = (e) => {
       e.preventDefault();
       let valInput = document.querySelector("#message"),
         user = this.props.user;
@@ -154,18 +155,24 @@ class Messenger extends React.Component {
             date: new Date(),
           };
         valInput.value = "";
+        this.props.friendsPosition(this.props.pos)
+        .then(data => {
+          this.context.emit("updatePositionFriends", this.props.friends)
+        })
         this.observable.subscribe({
             next(x) { },
             error(err) { console.error('something wrong occurred: ' + err); },
             complete() { console.log('done'); }
         });
-        socket.emit("message", JSON.stringify(data));
+
+        socket.emit("sendMessage", JSON.stringify(data));
         const chatBox = document.querySelector("#mensajes");
         chatBox.scrollTop = chatBox.scrollHeight;
       }
     };
 
-    socket.on("message", (msg) => {
+    socket.on("sendMessage", (msg) => {
+      console.log(msg)
       let img = document.createElement("img");
       img.src = "/dist/051210ccc8930db279f318fbbbc3e2cf.png";
       img.width = "24";
@@ -194,23 +201,23 @@ class Messenger extends React.Component {
     });
 
     this.NoTyp = () => {
-      if (document.getElementById("message").value === "") {
+      if (document.querySelector("#message").value === "") {
         this.setState({ isTyping: false });
-        socket.emit("NoTyping");
+        socket.emit("noTyping");
       }
     };
-    socket.on("NoTyping", () => {
-      document.getElementById("istyping").textContent = "";
+    socket.on("noTyping", () => {
+      document.querySelector("#istyping").textContent = "";
     });
     this.NoTypInterval = () => {
       this.setState({ isTyping: false });
-      socket.emit("NoTyping");
+      socket.emit("noTyping");
     };
-    socket.on("NoTyping", () => {
-      document.getElementById("istyping").textContent = "";
+    socket.on("noTyping", () => {
+      document.querySelector("#istyping").textContent = "";
     });
     this.Typ = () => {
-      if (document.getElementById("message").value != "") {
+      if (document.querySelector("#message").value != "") {
         this.setState({ isTyping: true });
         socket.emit("typing", this.props.user);
         console.log("typing");
@@ -241,11 +248,8 @@ class Messenger extends React.Component {
   }
   componentDidMount() {
     this.observable = new Observable(subscriber => {
-      subscriber.next(this.props.friendsPosition(this.props.pos));
-      subscriber.next(() => {
-        this.props.checkRoom()
-        socket.emit("sendLastUpdateLocal", this.props.friends)
-      });
+      subscriber.next();
+      subscriber.next(this.props.sendNotify())
       subscriber.complete();
     });
     this.checkScroll = setInterval(() => {
@@ -257,11 +261,12 @@ class Messenger extends React.Component {
     }, 1000);
   }
   componentWillUnmount() {
-    this.props.socket.off("message");
-    this.props.socket.off("checkRoom");
-    this.props.socket.off("sendLastUpdateLocal");
-    this.props.socket.off("NoTyping");
-    this.props.socket.off("typing");
+    const socket = this.context
+    socket.off("sendMessage");
+    socket.off("sendNotify");
+    socket.off("updatePositionFriends");
+    socket.off("noTyping");
+    socket.off("typing");
   }
   render() {
     const { classes } = this.props;
@@ -309,7 +314,7 @@ class Messenger extends React.Component {
               <form
                 style={{ display: "contents" }}
                 required
-                onSubmit={this.submit}
+                onSubmit={this.submitMessage}
               >
                 <IconButton color="inherit" onClick={this.icons}>
                   <InsertEmoticonIcon style={{ color: "#828689" }} />
@@ -336,5 +341,5 @@ class Messenger extends React.Component {
     );
   }
 }
-
+Messenger.contextType = SocketContext
 export default hot(module)(withStyles(styles)(Messenger));

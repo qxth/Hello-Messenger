@@ -28,6 +28,7 @@ import Picker from "emoji-picker-react";
 import routesApi from "./../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
 import {Observable} from 'rxjs';
+import SocketContext from './../socket/SocketContext'
 
 const styles = {
   "@global": {
@@ -203,14 +204,14 @@ const styles = {
 };
 
 class SearchFriends extends React.Component {
-  acceptObservable;
-  observable;
-  constructor(props) {
+  constructor(props, context) {
     super(props);
     this.state = {
       stash: [],
     };
-    const {socket} = this.props;
+    this.acceptObservable;
+    this.observable;
+    const socket = context;
     this.searchFriends = (e) => {
       e.preventDefault();
       const friend = document.querySelector("#nickname");
@@ -224,26 +225,24 @@ class SearchFriends extends React.Component {
       })
         .then((res) => res.json())
         .then((data) => {
-          switch (data.msg) {
-            case "No se ha encontrado el usuario":
-              alert("No se ha encontrado el usuario");
+          switch (data.message) {
+            case "The friend request has already been sent to the user!":
+              alert("The friend request has already been sent to the user!");
               break;
-            case "El usuario que intenta agregar ya es su amigo o ya le ha mandado solicitud":
+            case "The friend has already been added!":
               alert(
-                "El usuario que intenta agregar ya es su amigo o ya le ha mandado solicitud"
+                "The friend has already been added!"
               );
               break;
-            case "Se ha mandado solicitud":
+            case "Friend request has been send":
               friend.value = "";
-              alert("Se ha mandado solicitud!");
-              socket.emit("updateService", data.id)
-              break;
+              alert("Friend request has been send!");
+              socket.emit("updateRemoteService", data.idFriend)
+            break;
           }
         });
     };
-    socket.on("updateService", () => {
-      this.loadFriends();
-    })
+    socket.on("updateRemoteService", () => {this.loadFriends()})
     this.accept = (e) => {
       e.preventDefault()
       const num = e.target.childNodes[0].defaultValue,
@@ -269,18 +268,18 @@ class SearchFriends extends React.Component {
                 error(err) { console.error('something wrong occurred: ' + err); },
                 complete() { console.log('done'); }
             });
-            socket.emit("updateService", nameDB.id)
+            socket.emit("updateRemoteService", nameDB.id)
           }
         });
       }
     };
-  socket.on("updateService", () => {
-    this.observable.subscribe({
-      next(x) { },
-      error(err) { console.error('something wrong occurred: ' + err); },
-      complete() { console.log('done'); }
-    });
-  });
+    socket.on("updateRemoteService", () => {
+      this.observable.subscribe({
+        next(x) { },
+        error(err) { console.error('something wrong occurred: ' + err); },
+        complete() { console.log('done'); }
+      })
+    })
     this.loadFriends = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
@@ -288,9 +287,9 @@ class SearchFriends extends React.Component {
           console.log("loading stash friends...")
           console.log(data);
           this.setState({stash: []});
-          for (let i of data.result) {
+          for (let i of data.rows) {
             this.setState({
-              stash: [...this.state.stash, { id: i.id, name: i.nickname }],
+              stash: [...this.state.stash, { id: i.user_id, name: i.user_nickname }],
             });
             console.log(this.state.stash);
           }
@@ -307,16 +306,15 @@ class SearchFriends extends React.Component {
       console.log(nameDB);
       if(nameDB.length !== 0){
         fetch(`${routesApi.rejectFriends}`, {
-          method: "POST",
+          method: "DELETE",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ idFriend: nameDB.id }),
         })
         .then((e) => {
-          if(e.ok){
+          if(e.ok)
             return this.loadFriends();            
-          }
         })
       }
     };
@@ -325,16 +323,16 @@ class SearchFriends extends React.Component {
     this.acceptObservable = new Observable(subscriber => {
       subscriber.next(this.props.reloadChats())
       subscriber.next(this.loadFriends())
-      subscriber.next(this.props.requireLastUpdate());
+      subscriber.next(this.props.getPositionFriends());
       subscriber.complete();
     });
     this.observable = new Observable(subscriber => {
       subscriber.next(this.props.reloadChats())
-      subscriber.next(this.props.requireLastUpdate())
+      subscriber.next(this.props.getPositionFriends())
       subscriber.complete()
     })
     this.loadFriends();
-    this.props.socket.emit("leaveRoom")
+    this.context.emit("leaveRoom")
   }
 
   render() {
@@ -391,5 +389,6 @@ class SearchFriends extends React.Component {
     );
   }
 }
+SearchFriends.contextType = SocketContext
 
 export default hot(module)(withStyles(styles)(SearchFriends));

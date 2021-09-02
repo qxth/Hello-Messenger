@@ -4,7 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import Router from "./Router";
 import { MuiThemeProvider, withStyles } from "@material-ui/core/styles";
 import { CookiesProvider } from 'react-cookie';
-
+import SocketProvider from './socket/SocketProvider.js'
 const styles = (tema) => ({
   "@global": {
     body: {
@@ -20,11 +20,13 @@ const App = () => {
   return (
     <React.Fragment>
       <div>
-          <CookiesProvider>
+        <CookiesProvider>
+          <SocketProvider>
             <BrowserRouter>
               <Router />
             </BrowserRouter>
-          </CookiesProvider>
+          </SocketProvider>
+        </CookiesProvider>
       </div>
     </React.Fragment>
   );

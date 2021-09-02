@@ -23,7 +23,7 @@ import Header from "../components/header";
 import catIcon from './../img/cat-icon.png'
 
 const styles = {
-  section1: {
+  sectionBody: {
     width: "100%",
     display: "grid",
     "grid-template-columns": "repeat(4,1fr)",
@@ -52,7 +52,7 @@ const styles = {
       lineHeight: "32px",
     },
   },
-  sectioncon: {
+  container: {
     backgroundSize: "cover",
     backgroundPosition: "bottom",
     backgroundImage:
@@ -116,9 +116,9 @@ class Home extends React.Component {
     const { classes } = this.props;
     return (
       <div>
-        <div className={classes.sectioncon}>
+        <div className={classes.container}>
           <Header catIcon={catIcon}/>
-          <div className={classes.section1}>
+          <div className={classes.sectionBody}>
             <div className={classes.box}>
               <h1>Hello Messenger</h1>
               <div>

@@ -32,6 +32,7 @@ export class ChatService {
 			.andWhere({idUser: friendId})
 		}))
 		.getRawMany()
+		console.log(rows)
 	    if(rows.length < 0)
 	       throw new HttpException({
 	       	status:  HttpStatus.BAD_REQUEST, 
@@ -39,6 +40,7 @@ export class ChatService {
 	       	chat: 'Chat not found!'
 	       }, HttpStatus.BAD_REQUEST);
 		const dataChat = [JSON.parse(rows[0].ChatData)]
+		console.log(dataChat)
 		return res.status(HttpStatus.OK).json({
 			status: 200,
 			dataChat,
@@ -90,7 +92,7 @@ export class ChatService {
 		.andWhere({id: user[0].id})
 		.orWhere(new Brackets (qb => {
 			qb.where({idFriend: user[0].id})
-			.andWhere({idUser: id})
+			.andWhere({id: id})
 		}))
 		.getRawMany()
 		if(stash.length > 1)
@@ -117,7 +119,8 @@ export class ChatService {
 		const stashFriend = await this.stashFriendsRepository.save(stashData)
 		return res.status(HttpStatus.OK).json({
 			status: HttpStatus.OK,
-			message: "Friend request has been send"
+			message: "Friend request has been send",
+			idFriend: user[0].id
 		})
 	}
 	async acceptFriends (req: Request, res: Response): Promise<any>{
@@ -129,17 +132,17 @@ export class ChatService {
 		.where({idFriend: id})
 		.andWhere({id: idFriend})
 		.orWhere(new Brackets (qb => {
-			qb.where({idFriend: idFriend})
-			.andWhere({idUser: id})
+			qb.where({idFriend: id})
+			.andWhere({id: idFriend})
 		}))
 		.getRawMany()
-		if(!stashUser.length)
+		if(stashUser.length < 1)
 			throw new HttpException({
 				status:  HttpStatus.BAD_REQUEST, 
 				message: 'Friend request not found', 
 				chat: 'Friend request is not founded!'
 			}, HttpStatus.BAD_REQUEST);
-		const friend = this.friendsRepository
+		const friend = await this.friendsRepository
 		.createQueryBuilder("Friends")
 		.insert()
 		.into(Friends)
@@ -158,8 +161,9 @@ export class ChatService {
 		const stash = await this.stashFriendsRepository
 		.createQueryBuilder("stashFriends")
 		.delete()
-		.where({idFriend: idFriend})
-		.andWhere({id: id})
+		.where({idFriend: id})
+		.andWhere({id: idFriend})
+		.execute()
 		return res.status(HttpStatus.OK).json({
 			status: 200,
 			message: "Added to a friend"
@@ -169,8 +173,10 @@ export class ChatService {
 		const stash = await this.stashFriendsRepository
 		.createQueryBuilder("stashFriends")
 		.delete()
-		.where({idFriend: req.body.idFriend})
-		.andWhere({id: req.user.id})
+		.from(StashFriends)
+		.where({idFriend: req.user.id})
+		.andWhere({id: req.body.idFriend})
+		.execute()
 		return res.status(HttpStatus.OK).json({
 			status: 200,
 			message: "Friend request canceled!"

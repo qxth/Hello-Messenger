@@ -12,258 +12,208 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import Redis from "ioredis";
-import {AuthGuard} from '@nestjs/passport'
-import {Request} from 'express'
 import {SocketGuard} from './guards/socketAuth.guard'
+import {EventsService} from './events.service'
+import {Notify, UserStatus} from './events.interface'
 import { Chat } from './../entities/chat.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, createQueryBuilder, Brackets} from 'typeorm';
 
-interface Notify{
-  status?: any;
-  id?: any;
-  nickname:any;
-  notify?: any;
-}
-@WebSocketGateway()
+@UseGuards(SocketGuard)
+@WebSocketGateway({namespace: "chat"})
 export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect{
   private readonly logger = new Logger('AppGateway')
-  idUser: any;
-  idFriend: any;
-  redis: any;
-  room: any;
-  friendsOrderSocket: any;
+  room = undefined
+  idFriend = undefined
+  redis = new Redis()
   constructor(
     @InjectRepository(Chat)
-    private chatRepository: Repository<Chat>
-  ){
-    this.idUser = "";
-    this.redis = new Redis()
-    this.room = ""
-    this.idFriend = ""
-    this.friendsOrderSocket = (idF: any) => {
-    this.redis.get(`friendsOrder_${idF}`, (err, data) => {
-      if (err) return console.error(err);
-      if (JSON.stringify(data) === "null") 
-          return this.redis.set(`friendsOrder_${idF}`, JSON.stringify([{ id: this.idUser }]));
-        console.log("updating in another chat my local chat");
-        console.log("data", data);
-        console.log("MyId:", this.idUser);
-        const arrFriend = JSON.parse(data),
-          newArr = Array.from(arrFriend),
-          posEl = arrFriend.findIndex((e) => e.id === this.idUser);
-        console.log(posEl);
-        if (posEl !== -1) {
-          newArr.splice(posEl, 1);
-          newArr.unshift(arrFriend[posEl]);
-          console.log("ifarr", newArr)
-          return this.redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
-        } 
-          newArr.unshift({ id: this.idUser });
-          this.redis.set(`friendsOrder_${idF}`, JSON.stringify(newArr));
-          console.log("notifarr", newArr)
+    private chatRepository: Repository<Chat>,
+    private readonly eventsService: EventsService
+  ){}
+  updateFriendsPosition (idFriend: any, client: any) {
+    const id = client.data.id;
+    this.redis.get(`friendsPosition_${idFriend}`, (err, data) => {
+    if (err) return console.error(err);
+    if (JSON.stringify(data) === "null") 
+        return this.redis.set(`friendsPosition_${idFriend}`, JSON.stringify([{ id: id }]));
+      const friends = JSON.parse(data),
+        newFriends = Array.from(friends),
+        posFriends = friends.findIndex((e) => e.id === id);
+      if (posFriends !== -1) {
+        newFriends.splice(posFriends, 1);
+        newFriends.unshift(friends[posFriends]);
+        return this.redis.set(`friendsPosition_${idFriend}`, JSON.stringify(newFriends));
+      } 
+        newFriends.unshift({ id: id });
+        this.redis.set(`friendsPosition_${idFriend}`, JSON.stringify(newFriends));
     });
   };
-  }
   afterInit(server: Server){
     this.logger.log('Socket initialized')
   }
 	@WebSocketServer()
 	server: Server;	
-  //@UseGuards(SocketGuard)
-  @SubscribeMessage("online")
-  public online(@MessageBody() id: any, @ConnectedSocket() client: Socket): any{
-    console.log(client.id)
-    this.redis
-    .pipeline()
-    .set(`status_${id}`, "online")
-    .set(`dataInit_${id}`, `{"id": ${id}, "socketID": "${client.id}"}`)
-    .exec((err, res) => {
-      if(err) return console.log(err);
-      this.idUser = id;
-      console.log(res)
-    })
+  async handleConnection(@ConnectedSocket() client: any): Promise<any> {
+    const token = client.handshake.headers.cookie
+    const user: any = await this.eventsService.verifyToken(token)
+    if(!user){
+      return client.disconnect();
+    }else{
+      this.redis
+      .pipeline()
+      .set(`status_${user.id}`, "online")
+      .set(`dataInit_${user.id}`, `{"id": ${user.id}, "socketID": "${client.id}"}`)
+      .exec((err, res) => {
+        if(err) return console.log(err);
+        this.logger.log(`Client connected: ${client.id}`);
+      })
+    }
   }
   @SubscribeMessage("checkOnline")
-  checkOnline(@MessageBody() id: any, @ConnectedSocket() client: Socket): any{
-    this.redis.get(`status_${id.id}`, (err, res) => {
+  checkOnline(@MessageBody() data: any, @ConnectedSocket() client: any): any{
+    this.redis.get(`status_${data.id}`, (err, res) => {
       if (err) return console.log(err);
-      const notifyLog:  Notify  = {
+      const userStatus:  UserStatus  = {
         status: "green",
-        nickname: id.nickname
+        nickname: data.nickname
       }
       if (res !== "online")
-        notifyLog.status = "red"
-      return client.emit("checkOnline", notifyLog);
+        userStatus.status = "red"
+      client.emit("checkOnline", userStatus);
     });
   }
-  @SubscribeMessage("newMessage")
-  async newMessage(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<any>{
-  const rows = await this.chatRepository
-    .createQueryBuilder("ChatStorage")
-    .select(['idChat'])
-    .where({idFriend: data.id})
-    .andWhere({idUser: this.idUser})
-    .orWhere(new Brackets (qb => {
-      qb.where({idFriend: this.idUser})
-      .andWhere({idUser: data.id})
-    }))
-    .getRawMany()
-    const numNotifys: any = await this.redis.get(`notify_${rows[0].idChat}_${data.id}`);
+  @SubscribeMessage("loadNotify")
+  async loadNotify(@MessageBody() data: any, @ConnectedSocket() client: any): Promise<any>{
+    const rows = await this.chatRepository
+      .createQueryBuilder("ChatStorage")
+      .select('ChatStorage.idChat')
+      .where({idFriend: data.id})
+      .andWhere({idUser: client.data.id})
+      .orWhere(new Brackets (qb => {
+        qb.where({idFriend: client.data.id})
+          .andWhere({idUser: data.id})
+      }))
+      .getRawMany()
+    const totalNotify = await this.redis.get(`notify_${rows[0].ChatStorage_idChat}_${data.id}`);
     const newNotify: Notify = {
       id: data.id,
       nickname: data.name,
-      notify: numNotifys
+      notify: totalNotify
     } 
-    console.log(
-      `notify of ${data.name}_${data.id}:${numNotifys} in room ${rows[0].idChat} loading..`
-    );
-    return client.emit("newMessage", newNotify)
+    client.emit("loadNotify", newNotify)
   }
-  @SubscribeMessage("updateService")
-  updateService(@MessageBody() id: any){
+  @SubscribeMessage("updateRemoteService")
+  updateRemoteService(@MessageBody() id: any){
     this.redis.get(`dataInit_${id}`, (err, res) => {
       if (err) return console.error(err);
       const json = JSON.parse(res);
-      console.log("====data=====");
-      console.log(json);
-      this.server.to(`${json.socketID}`).emit("updateService");
-      console.log("====data=====");
+      this.server.to(`${json.socketID}`).emit("updateRemoteService");
     });
   }
-  @SubscribeMessage("create")
-  create(@MessageBody() roomname: any, @ConnectedSocket() client: Socket){
-    if (this.room !== undefined) {
-      console.log(`leaving room.. ${this.room}`);
-      client.leave(this.room);
-    }
-    (this.room = roomname.room), (this.idFriend = roomname.id);
-    client.join([this.room]);
-    this.redis.set(`notify_${this.room}_${this.idFriend}`, 0);
-    console.log(roomname);
-    console.log(client.rooms);
+  @SubscribeMessage("createRoom")
+  createRoom(@MessageBody() data: any, @ConnectedSocket() client: any){
+    this.leaveRoom()
+    (this.room = data.room), (this.idFriend = data.id);
+    client.join([data.room]);
+    this.redis.set(`notify_${data.room}_${data.id}`, 0);
   }
   @SubscribeMessage("leaveRoom")
   leaveRoom(client: Socket){
-    if (this.room !== undefined) {
+    if (this.room !== undefined) 
       client.leave(this.room);
-      console.log(this.room);
-      console.log("leaving the room...");
-      console.log(client.rooms);
-    }
   }
-  @SubscribeMessage("checkRoom")
-  async checkRoom(client: Socket): Promise<any>{
+  @SubscribeMessage("sendNotify")
+  async sendNotify(client: any): Promise<any>{
     const roomId = await this.server.in(this.room).allSockets(),
       res = await this.redis.get(`dataInit_${this.idFriend}`),
       json = JSON.parse(res);
-    console.log("checking room");
-    this.friendsOrderSocket(this.idFriend);
-    console.log("friendID:", this.idFriend);
-    console.log("myid:", this.idUser);
-    console.log("has id?", roomId.has(json.socketID))
-    console.log("room", this.room)
+    this.updateFriendsPosition(this.idFriend, client);
     if (!roomId.has(json.socketID)) {
       client.leave(this.room);
-      const num = await this.redis.get(`notify_${this.room}_${this.idUser}`);
-      console.log(num);
-      console.log(typeof num);
-      console.log(JSON.stringify(num))
-      console.log(typeof JSON.stringify(num))
-      if(isNaN(num)) console.log("NaN IS REALLL")
+      const num = await this.redis.get(`notify_${this.room}_${client.data.id}`);
       if (JSON.stringify(num) == "null" || isNaN(num)) {
-        this.redis.set(`notify_${this.room}_${this.idUser}`, 1);
-        console.log("num null");
-        console.log("sending notify...", json.socketID);
+        this.redis.set(`notify_${this.room}_${client.data.id}`, 1);
         this.server
           .to(`${json.socketID}`)
-          .emit("checkRoom", { notify: 1, id: this.idUser });
+          .emit("sendNotify", { notify: 1, id: client.data.id });
         client.join([this.room]);
-        console.log(client.rooms);
       } else {
-        this.redis.set(`notify_${this.room}_${this.idUser}`, parseInt(num) + 1);
-        console.log("sending notify...", json.socketID);
+        this.redis.set(`notify_${this.room}_${client.data.id}`, parseInt(num) + 1);
         this.server
           .to(`${json.socketID}`)
-          .emit("checkRoom", { notify: parseInt(num) + 1, id: this.idUser });
+          .emit("sendNotify", { notify: parseInt(num) + 1, id: client.data.id });
         client.join([this.room]);
-        console.log(client.rooms);
       }
     }
   }
   @SubscribeMessage("acceptNewFriend")
-  acceptNewFriend(@MessageBody() idF: any, @ConnectedSocket() client: Socket){
+  acceptNewFriend(@MessageBody() idFriend: any, @ConnectedSocket() client: any){
      this.redis
-      .get(`friendsOrder_${this.idUser}`, (err, data) => {
+      .get(`friendsPosition_${client.data.id}`, (err, data) => {
         if (err) 
           return console.log(err);
        if (JSON.stringify(data) === "null") 
-          return this.redis.set(`friendsOrder_${this.idUser}`, JSON.stringify([{ id: idF }]));
-        console.log("data", data);
-        console.log("MyId:", this.idUser);
-        const arrFriend = JSON.parse(data),
-          newArr = Array.from(arrFriend),
-          posEl = arrFriend.findIndex((e) => e.id === idF);
-        console.log(posEl);
-        if (posEl !== -1) {
-          newArr.splice(posEl, 1);
-          newArr.unshift(arrFriend[posEl]);
-          this.redis.set(`friendsOrder_${this.idUser}`, JSON.stringify(newArr));
-          return this.friendsOrderSocket(idF);
+          return this.redis.set(`friendsPosition_${client.data.id}`, JSON.stringify([{ id: idFriend }]));
+        const friends = JSON.parse(data),
+          newFriends = Array.from(friends),
+          posFriends = friends.findIndex((e) => e.id === idFriend);
+        if (posFriends !== -1) {
+          newFriends.splice(posFriends, 1);
+          newFriends.unshift(friends[posFriends]);
+          this.redis.set(`friendsPosition_${client.data.id}`, JSON.stringify(newFriends));
+          return this.updateFriendsPosition(idFriend, client);
         } 
-          newArr.unshift({ id: idF });
-          this.redis.set(`friendsOrder_${this.idUser}`, JSON.stringify(newArr));
-          return this.friendsOrderSocket(idF);
+          newFriends.unshift({ id: idFriend });
+          this.redis.set(`friendsPosition_${client.data.id}`, JSON.stringify(newFriends));
+          return this.updateFriendsPosition(idFriend, client);
       });
   }
-  @SubscribeMessage("message")
-  async message(@MessageBody() resMsg: any): Promise<any>{
-    const msg = JSON.parse(resMsg)
-    const data = `,${resMsg}]}`
+  @SubscribeMessage("sendMessage")
+  async sendMessage(@MessageBody() data: any): Promise<any>{
+    const msg = `,${data}]}` 
     await this.chatRepository
     .createQueryBuilder("ChatStorage")
     .update(Chat)
     .set({
       ChatData: () => 'concat(substring_index(ChatData, "]", 1), :chatData)'
     })
-    .setParameter("chatData", data)
+    .setParameter("chatData", msg)
     .where({idChat: this.room})
     .execute()
-    
-    this.server.to(this.room).emit("message", msg)
-    return msg
+    this.server.to(this.room).emit("sendMessage", JSON.parse(data))
   }
-  @SubscribeMessage("sendLastUpdateLocal")
-  sendLastUpdateLocal(@MessageBody() friendArr: any){
+  @SubscribeMessage("updatePositionFriends")
+  updatePositionFriends(@MessageBody() friends: any, @ConnectedSocket() client: any){
     this.redis
     .pipeline()
-    .set(`friendsOrder_${this.idUser}`, JSON.stringify(friendArr))
+    .set(`friendsPosition_${client.data.id}`, JSON.stringify(friends))
     .exec((err, res) => {
-      if (err) return console.log(err);
-      console.log(res);
-      console.log("new status set..");
+      if (err) return console.error(err);
     });
   }
-  @SubscribeMessage("requireLastUpdate")
-  requireLastUpdate(client: Socket): any{
-   this.redis.get(`friendsOrder_${this.idUser}`, (err, data) => {
+  @SubscribeMessage("getPositionFriends")
+  requireLastUpdate(client: any): any{
+   this.redis.get(`friendsPosition_${client.data.id}`, (err, data) => {
       if (err) return console.error(err);
-      client.emit("requireLastUpdate", data);
+      client.emit("getPositionFriends", data);
     });
   }
   @SubscribeMessage("typing")
-  typing(@MessageBody() user: any, @ConnectedSocket() client: Socket): any{
-    client.to(this.room).broadcast.emit("typing", user) 
+  typing(@MessageBody() user: any, @ConnectedSocket() client: any): any{
+    client.broadcast.to(this.room).emit("typing", user) 
   }
-  @SubscribeMessage("NoTyping")
-  NoTyping(client: Socket): any{
-    client.to(this.room).emit("NoTyping");
+  @SubscribeMessage("noTyping")
+  NoTyping(client: any): any{
+    client.to(this.room).emit("noTyping");
   }
-  public handleDisconnect(client: Socket) {
+  handleDisconnect(client: any) {
+    this.redis
+      .pipeline()
+      .set(`status_${client.data.id}`, "offline")
+      .exec((err, res) => {
+        if (err) return console.log(err);
+      });
     this.logger.log(`Client disconnected: ${client.id}`);
-  }
-
-  public handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
   }
 }

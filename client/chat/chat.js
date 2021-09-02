@@ -34,8 +34,11 @@ import MenuHome from "./menuHome";
 import routesApi from "../../server/utils/routes-api";
 import defaultAv from "./../img/icon.png";
 import Messenger from "./messenger";
-import { Socket } from "./Socket";
+import SocketContext from './../socket/SocketContext'
+
 import {Observable} from 'rxjs';
+import { fromFetch } from "rxjs/fetch";
+import { mergeMap } from "rxjs/operators";
 
 const styles = {
   "@global": {
@@ -159,8 +162,9 @@ const styles = {
 };
 class Chat extends React.Component {
   observable;
-  constructor(props) {
+  constructor(props, context) {
     super(props);
+    const socket = context;
     this.state = {
       isTyping: false,
       selected: false,
@@ -207,7 +211,8 @@ class Chat extends React.Component {
         })
           .then((res) => res.json())
           .then((data) => {
-            Socket.emit("create", {
+            console.log(data)
+            socket.emit("createRoom", {
               room: data.idChat,
               id: nameDB[0].id,
             });
@@ -218,12 +223,13 @@ class Chat extends React.Component {
               notify: 0,
             };
             document.getElementById(`${nameDB[0].id}`).style.opacity = "0";
-            if (data.error) return;
+            if (data.status === 400) return;
             this.setState({
               friends: newFriends,
               actualChat: [],
             });
-            const json = data.dataChat.ChatData;
+            const json = data.dataChat[0].ChatData;
+            console.log("json", json)
             json.shift();
             this.setState({
               actualChat: json,
@@ -232,41 +238,48 @@ class Chat extends React.Component {
           });
       }
     };
-    this.checkRoom = () => {
-      Socket.emit("checkRoom");
+    this.sendNotify = () => {
+      socket.emit("sendNotify");
     }
-    Socket.on("checkRoom", (n) => {
+    socket.on("sendNotify", (n) => {
       const data = document.getElementById(`${n.id}`);
       data.style.opacity = "1";
       data.innerHTML = `${n.notify}`;
       this.friendsPosition(n.id);
     });
-    this.reloadChats = () => {
-      fetch(routesApi.getAllFriends)
-        .then((res) => res.json())
-        .then(async (data) => {
-          console.log(data)
+     this.reloadChats = () => {
+      fromFetch(routesApi.getAllFriends)
+        .pipe(
+          mergeMap(res => res.json())
+        )
+        .subscribe(data => {
           this.setState({
             friends: [],
           });
+          console.log("data fries", data)
           for (let i of data.rows) {
-            Socket.emit("newMessage", { id: i.user_id, name: i.user_nickname });
+            socket.emit("loadNotify", { id: i.user_id, name: i.user_nickname });
           }
-        });
+          socket.on("loadNotify", (n) => {
+            console.log("NNNNNNNNN", n)
+            this.setState({
+            friends: [
+              ...this.state.friends,
+              { id: n.id, name: n.nickname, notify: n.notify }
+            ]})
+            console.log("actual state", this.state.friends)
+            console.log("rows", data.rows.length)
+            console.log("friends", this.state.friends.length)
+            if(data.rows.length === this.state.friends.length){
+              this.getPositionFriends()
+            }
+          })
+        })  
     };
-    Socket.on("newMessage", (n) => {
-      this.setState({
-        friends: [
-          ...this.state.friends,
-          { id: n.id, name: n.nickname, notify: n.notify },
-        ],
-      });
-      console.log(this.state.friends);
-    });
-    this.requireLastUpdate = () => {
-      Socket.emit("requireLastUpdate");
+    this.getPositionFriends = () => {
+      socket.emit("getPositionFriends");
     };
-    Socket.on("requireLastUpdate", (arr) => {
+    socket.on("getPositionFriends", (arr) => {
       console.log("Updating chats...");
       console.log(arr);
       console.log("====state friends====");
@@ -312,22 +325,23 @@ class Chat extends React.Component {
       this.interval = setInterval(() => {
         const friends = Array.from(this.state.friends);
         for (let i of friends) {
-          Socket.emit("checkOnline", { id: i.id, nickname: i.name });
+          socket.emit("checkOnline", { id: i.id, nickname: i.name });
         }
       }, 10000);
     };
-    Socket.on("checkOnline", async (status) => {
+    socket.on("checkOnline", async (status) => {
       document.querySelector(
         `#${status.nickname}`
       ).style.backgroundColor = `${status.status}`;
     });
     this.friendsPosition = (chatSelected) => {
-      const newArr = Array.from(this.state.friends),
+      return new Promise((resolve, reject) => {
+        const newArr = Array.from(this.state.friends),
         nameDB = this.state.friends.findIndex(
           (e) => e.id === parseInt(chatSelected)
         );
-      console.log(chatSelected);
-      if (nameDB !== -1) {
+        console.log(chatSelected);
+        if (nameDB !== -1) {
         console.log(this.state.friends[nameDB].name);
         newArr.splice(nameDB, 1);
         newArr.unshift(this.state.friends[nameDB]);
@@ -335,11 +349,15 @@ class Chat extends React.Component {
           friends: newArr,
         });
         console.log(newArr);
-      }
+        }
+        resolve(newArr)
+        reject([])
+      })
     };
   }
 
   componentDidMount() {
+    console.log(this.context)
     fetch(routesApi.verificarToken, {
       method: "GET",
     })
@@ -347,13 +365,12 @@ class Chat extends React.Component {
       .then(async (data) => {
         console.log(data);
         this.setState({ user: data.nickname });
+        this.reloadChats()
         this.observable = new Observable(subscriber => {
-          subscriber.next(this.reloadChats());
-          subscriber.next(this.requireLastUpdate());
           subscriber.next(this.statusChecker());
+          console.log("stare friend", this.state.friends)
           subscriber.complete();
         });
-        Socket.emit("online", data.id);
         this.observable.subscribe({
             next(x) { },
             error(err) { console.error('something wrong occurred: ' + err); },
@@ -362,6 +379,10 @@ class Chat extends React.Component {
       });
   }
   componentWillUnmount() {
+    const socket = this.context
+    socket.off("getPositionFriends")
+    socket.off("loadNotify")
+    socket.off("sendNotify")
     clearInterval(this.interval);
   }
 
@@ -482,7 +503,6 @@ class Chat extends React.Component {
         <HandleScreen
           canal={this.state.canal}
           reloadChats={this.reloadChats}
-          socket={Socket}
           defaultAv={defaultAv}
           chatSelected={this.state.chatSelected}
           user={this.state.user}
@@ -490,12 +510,12 @@ class Chat extends React.Component {
           friends={this.state.friends}
           friendsPosition={this.friendsPosition}
           actualChat={this.state.actualChat}
-          requireLastUpdate={this.requireLastUpdate}
-          checkRoom={this.checkRoom}
+          getPositionFriends={this.getPositionFriends}
+          sendNotify={this.sendNotify}
         />
       </div>
     );
   }
 }
-
+Chat.contextType = SocketContext
 export default hot(module)(withStyles(styles)(Chat));
