@@ -13,7 +13,7 @@ import { Chat } from './entities/chat.entity';
 import { Friends } from './entities/friends.entity' 
 import {StashFriends} from './entities/stashFriends.entity'
 import template from './../index.js'
-import routes from './utils/routes-api'
+import routes from './../utils/routes-api'
 import {AppController} from './app.controller'
 import {EventsModule} from './events/events.module'
 

@@ -8,8 +8,11 @@ import Register from "./register/register";
 import Home from "./views/home";
 import LogOut from "./views/logOut";
 import NotFound from "./views/notFound";
+
 // Extras
-import routerApi from "./../server/utils/routes-api";
+import {AppContext} from './../utils/app-context'
+import {Socket} from './../utils/Socket'
+import routerApi from "./../utils/routes-api";
 
 const Router = () => {
   const [routes, setRoutes] = useState(false);
@@ -18,21 +21,32 @@ const Router = () => {
     fetch(`${routerApi.verificarToken}`, {
       method: "GET",
     })
-      .then((res) => {
-        if (res.status !== 401) return setRoutes(true);
-      });
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 200) {
+          setDataUser(data.user)
+          setRoutes(true);
+          return;
+        } 
+      })
+      .catch(e => setRoutes(false))
   });
   const Routes = () => {
     if (routes)
       return ( 
-        <React.Fragment>
-          <Switch>
-            <Route exact path="/" component={Home} />
-            <Route exact path="/chat" component={Chat} />
-            <Route exact path="/logout" component={LogOut} />
-            <Route exact path="*" component={NotFound} />
-          </Switch>
-        </React.Fragment>
+          <React.Fragment>  
+            <AppContext.Provider value={{
+              user: dataUser.nickname,
+              socket: Socket
+            }}>    
+              <Switch>
+                  <Route exact path="/" component={Home} />
+                  <Route exact path="/chat" component={Chat} />
+                  <Route exact path="/logout" component={LogOut} />
+                  <Route exact path="/*" component={NotFound} />
+              </Switch>
+            </AppContext.Provider>  
+          </React.Fragment>
       );
     return (
       <React.Fragment>
@@ -40,7 +54,7 @@ const Router = () => {
           <Route exact path="/" component={Home} />
           <Route exact path="/login" component={Login} />
           <Route exact path="/register" component={Register} />
-          <Route exact path="*" component={NotFound} />
+          <Route exact path="/*" component={NotFound} />
         </Switch>
       </React.Fragment>
     );

@@ -1,5 +1,5 @@
 import crypto from "crypto-js";
-import keys from "./../../secret/keys";
+import keys from "./../secret/keys";
 
 const key = keys.cryptoKey;
 const iv = keys.cryptoIV;

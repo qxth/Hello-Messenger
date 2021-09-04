@@ -26,7 +26,7 @@ import {
 import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
 import {Observable} from 'rxjs';
-import SocketContext from './../socket/SocketContext'
+import {AppContext} from "./../../utils/app-context";
 
 const styles = {
   channel: {
@@ -139,11 +139,10 @@ class Messenger extends React.Component {
       ShowEmojis: false,
       isTyping: false,
     };
-    const socket = context;
+    const {socket, user} = context;
     this.submitMessage = (e) => {
       e.preventDefault();
-      let valInput = document.querySelector("#message"),
-        user = this.props.user;
+      let valInput = document.querySelector("#message")
       if (valInput.value !== "") {
         let messageSubmit = valInput.value
             .split("\n")
@@ -216,10 +215,10 @@ class Messenger extends React.Component {
     socket.on("noTyping", () => {
       document.querySelector("#istyping").textContent = "";
     });
-    this.Typ = () => {
+    this.Typing= () => {
       if (document.querySelector("#message").value != "") {
         this.setState({ isTyping: true });
-        socket.emit("typing", this.props.user);
+        socket.emit("typing", user);
         console.log("typing");
         setTimeout(this.NoTypInterval, 5000);
       }
@@ -230,15 +229,17 @@ class Messenger extends React.Component {
       ).textContent = `${username} esta escribiendo...`;
     });
 
-    this.IsTyping = (e) => {
-      if (this.state.isTyping) return this.NoTyp();
+    this.TyperHandler = (e) => {
+      if (this.state.isTyping) 
+        return this.NoTyp();
       this.setState({ isTyping: true });
-      this.Typ();
+      this.Typing();
     };
     this.onEmojiClick = (e, emojiObject) => {
       let chosenEmoji = null;
       chosenEmoji = emojiObject;
       document.getElementById("message").value += chosenEmoji.emoji;
+      this.TyperHandler()
     };
     this.icons = () => {
       if (this.state.ShowEmojis == false)
@@ -248,7 +249,6 @@ class Messenger extends React.Component {
   }
   componentDidMount() {
     this.observable = new Observable(subscriber => {
-      subscriber.next();
       subscriber.next(this.props.sendNotify())
       subscriber.complete();
     });
@@ -261,7 +261,7 @@ class Messenger extends React.Component {
     }, 1000);
   }
   componentWillUnmount() {
-    const socket = this.context
+    const socket = this.context.socket
     socket.off("sendMessage");
     socket.off("sendNotify");
     socket.off("updatePositionFriends");
@@ -327,7 +327,7 @@ class Messenger extends React.Component {
                   inputProps={{ maxLength: 500, minLength: 1 }}
                   placeholder="Envie un mensaje"
                   multiline
-                  onKeyUp={this.IsTyping}
+                  onKeyUp={this.TyperHandler}
                   className={classes.input}
                 />
                 <IconButton type="submit">
@@ -341,5 +341,5 @@ class Messenger extends React.Component {
     );
   }
 }
-Messenger.contextType = SocketContext
+Messenger.contextType = AppContext
 export default hot(module)(withStyles(styles)(Messenger));

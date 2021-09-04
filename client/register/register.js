@@ -20,7 +20,7 @@ import {
 import { withStyles } from "@material-ui/core/styles";
 
 //#Extras
-import routesApi from "./../../server/utils/routes-api";
+import routesApi from "./../../utils/routes-api";
 import formBackground from "./../img/formBackground.jpg";
 
 const styles = {

@@ -5,7 +5,7 @@ import {
   HttpStatus, UseGuards
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import routes from './../utils/routes-api'
+import routes from './../../utils/routes-api'
 import {AuthGuard} from '@nestjs/passport'
 import {ChatService} from './chat.service'
 

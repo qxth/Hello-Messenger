@@ -25,10 +25,10 @@ import {
 
 //#Extras
 import Picker from "emoji-picker-react";
-import routesApi from "./../../server/utils/routes-api";
+import routesApi from "./../../utils/routes-api";
 import defaultAv from "./../img/icon.png";
 import {Observable} from 'rxjs';
-import SocketContext from './../socket/SocketContext'
+import {AppContext} from "./../../utils/app-context";
 
 const styles = {
   "@global": {
@@ -211,7 +211,7 @@ class SearchFriends extends React.Component {
     };
     this.acceptObservable;
     this.observable;
-    const socket = context;
+    const {socket} = context;
     this.searchFriends = (e) => {
       e.preventDefault();
       const friend = document.querySelector("#nickname");
@@ -321,13 +321,13 @@ class SearchFriends extends React.Component {
   }
   componentDidMount() {
     this.acceptObservable = new Observable(subscriber => {
-      subscriber.next(this.props.reloadChats())
+      subscriber.next(this.props.reloadFriends())
       subscriber.next(this.loadFriends())
       subscriber.next(this.props.getPositionFriends());
       subscriber.complete();
     });
     this.observable = new Observable(subscriber => {
-      subscriber.next(this.props.reloadChats())
+      subscriber.next(this.props.reloadFriends())
       subscriber.next(this.props.getPositionFriends())
       subscriber.complete()
     })
@@ -389,6 +389,6 @@ class SearchFriends extends React.Component {
     );
   }
 }
-SearchFriends.contextType = SocketContext
+SearchFriends.contextType = AppContext
 
 export default hot(module)(withStyles(styles)(SearchFriends));

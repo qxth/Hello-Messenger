@@ -3,7 +3,7 @@ import { Response } from 'express';
 import {UserService} from './user.service'
 import {createUser} from './dto/user.dto'
 import { ValidationPipe } from './../share/validation.pipe'
-import routes from './../utils/routes-api'
+import routes from './../../utils/routes-api'
 
 @Controller()
 export class UserController {

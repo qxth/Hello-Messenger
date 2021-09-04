@@ -13,7 +13,7 @@ import {
 } from "@material-ui/core";
 import MenuIcon from "@material-ui/icons/Menu";
 import { withStyles } from "@material-ui/core/styles";
-import routerApi from "./../../server/utils/routes-api";
+import routerApi from "./../../utils/routes-api";
 
 const styles = {
   navbar: {

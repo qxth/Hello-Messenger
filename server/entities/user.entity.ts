@@ -3,7 +3,7 @@ import {
   BeforeInsert, ManyToMany, JoinTable, OneToMany, ManyToOne, JoinColumn
 } from 'typeorm';
 import * as argon2 from 'argon2';
-import { cryptAnsw } from "./../utils/encrypt";
+import { cryptAnsw } from "./../../utils/encrypt";
 import {Friends} from './friends.entity'
 import {StashFriends} from './stashFriends.entity'
 

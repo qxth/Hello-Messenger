@@ -31,10 +31,10 @@ import {
 //#Extras
 import HandleScreen from "./handleScreen";
 import MenuHome from "./menuHome";
-import routesApi from "../../server/utils/routes-api";
+import routesApi from "./../../utils/routes-api";
+import {AppContext} from "./../../utils/app-context";
 import defaultAv from "./../img/icon.png";
 import Messenger from "./messenger";
-import SocketContext from './../socket/SocketContext'
 
 import {Observable} from 'rxjs';
 import { fromFetch } from "rxjs/fetch";
@@ -164,7 +164,7 @@ class Chat extends React.Component {
   observable;
   constructor(props, context) {
     super(props);
-    const socket = context;
+    const {socket, user} = context;
     this.state = {
       isTyping: false,
       selected: false,
@@ -172,7 +172,6 @@ class Chat extends React.Component {
       friends: [],
       actualChat: [],
       canal: true,
-      user: null,
       anchorEl: null,
     };
     this.handleClick = (e) => {
@@ -222,14 +221,13 @@ class Chat extends React.Component {
               name: nameDB[0].name,
               notify: 0,
             };
-            document.getElementById(`${nameDB[0].id}`).style.opacity = "0";
+            document.querySelector(`#${nameDB[0].id}`).style.opacity = "0";
             if (data.status === 400) return;
             this.setState({
               friends: newFriends,
               actualChat: [],
             });
             const json = data.dataChat[0].ChatData;
-            console.log("json", json)
             json.shift();
             this.setState({
               actualChat: json,
@@ -247,7 +245,7 @@ class Chat extends React.Component {
       data.innerHTML = `${n.notify}`;
       this.friendsPosition(n.id);
     });
-     this.reloadChats = () => {
+     this.reloadFriends = () => {
       fromFetch(routesApi.getAllFriends)
         .pipe(
           mergeMap(res => res.json())
@@ -256,20 +254,15 @@ class Chat extends React.Component {
           this.setState({
             friends: [],
           });
-          console.log("data fries", data)
           for (let i of data.rows) {
             socket.emit("loadNotify", { id: i.user_id, name: i.user_nickname });
           }
           socket.on("loadNotify", (n) => {
-            console.log("NNNNNNNNN", n)
             this.setState({
             friends: [
               ...this.state.friends,
               { id: n.id, name: n.nickname, notify: n.notify }
             ]})
-            console.log("actual state", this.state.friends)
-            console.log("rows", data.rows.length)
-            console.log("friends", this.state.friends.length)
             if(data.rows.length === this.state.friends.length){
               this.getPositionFriends()
             }
@@ -355,31 +348,20 @@ class Chat extends React.Component {
       })
     };
   }
-
   componentDidMount() {
-    console.log(this.context)
-    fetch(routesApi.verificarToken, {
-      method: "GET",
-    })
-      .then((res) => res.json())
-      .then(async (data) => {
-        console.log(data);
-        this.setState({ user: data.nickname });
-        this.reloadChats()
-        this.observable = new Observable(subscriber => {
-          subscriber.next(this.statusChecker());
-          console.log("stare friend", this.state.friends)
-          subscriber.complete();
-        });
-        this.observable.subscribe({
-            next(x) { },
-            error(err) { console.error('something wrong occurred: ' + err); },
-            complete() { console.log('done'); }
-        });
-      });
+    this.reloadFriends()
+    this.observable = new Observable(subscriber => {
+      subscriber.next(this.statusChecker());
+      subscriber.complete();
+    });
+    this.observable.subscribe({
+        next(x) { },
+        error(err) { console.error('something wrong occurred: ' + err); },
+        complete() { }
+    });
   }
   componentWillUnmount() {
-    const socket = this.context
+    const {socket} = this.context
     socket.off("getPositionFriends")
     socket.off("loadNotify")
     socket.off("sendNotify")
@@ -502,10 +484,9 @@ class Chat extends React.Component {
         </div>
         <HandleScreen
           canal={this.state.canal}
-          reloadChats={this.reloadChats}
+          reloadFriends={this.reloadFriends}
           defaultAv={defaultAv}
           chatSelected={this.state.chatSelected}
-          user={this.state.user}
           pos={this.state.pos}
           friends={this.state.friends}
           friendsPosition={this.friendsPosition}
@@ -517,5 +498,5 @@ class Chat extends React.Component {
     );
   }
 }
-Chat.contextType = SocketContext
+Chat.contextType = AppContext
 export default hot(module)(withStyles(styles)(Chat));
