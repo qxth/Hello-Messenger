@@ -10,6 +10,7 @@ import {
   OnGatewayConnection, 
   OnGatewayDisconnect
 } from '@nestjs/websockets';
+import * as socket from 'socket.io';
 import { Server, Socket } from 'socket.io';
 import Redis from "ioredis";
 import {SocketGuard} from './guards/socketAuth.guard'
@@ -31,7 +32,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     private chatRepository: Repository<Chat>,
     private readonly eventsService: EventsService
   ){}
-  updateFriendsPosition (idFriend: any, client: any) {
+  updateFriendsPosition (idFriend: any, client: Socket) {
     const id = client.data.id;
     this.redis.get(`friendsPosition_${idFriend}`, (err, data) => {
     if (err) return console.error(err);
@@ -54,24 +55,24 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
 	@WebSocketServer()
 	server: Server;	
-  async handleConnection(@ConnectedSocket() client: any): Promise<any> {
-    const token = client.handshake.headers.cookie
+
+  async handleConnection(@ConnectedSocket() client: Socket): Promise<any> {
+    const token = client.handshake.headers['cookie']
     const user: any = await this.eventsService.verifyToken(token)
     if(!user){
       return client.disconnect();
-    }else{
+    }
       this.redis
       .pipeline()
       .set(`status_${user.id}`, "online")
-      .set(`dataInit_${user.id}`, `{"id": ${user.id}, "socketID": "${client.id}"}`)
+      .set(`infoUser_${user.id}`, `{"id": ${user.id}, "socketID": "${client.id}"}`)
       .exec((err, res) => {
         if(err) return console.log(err);
         this.logger.log(`Client connected: ${client.id}`);
       })
-    }
   }
   @SubscribeMessage("checkOnline")
-  checkOnline(@MessageBody() data: any, @ConnectedSocket() client: any): any{
+  checkOnline(@MessageBody() data: any, @ConnectedSocket() client: Socket): any{
     this.redis.get(`status_${data.id}`, (err, res) => {
       if (err) return console.log(err);
       const userStatus:  UserStatus  = {
@@ -84,7 +85,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     });
   }
   @SubscribeMessage("loadNotify")
-  async loadNotify(@MessageBody() data: any, @ConnectedSocket() client: any): Promise<any>{
+  async loadNotify(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<any>{
     const rows = await this.chatRepository
       .createQueryBuilder("ChatStorage")
       .select('ChatStorage.idChat')
@@ -105,14 +106,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
   @SubscribeMessage("updateRemoteService")
   updateRemoteService(@MessageBody() id: any){
-    this.redis.get(`dataInit_${id}`, (err, res) => {
+    this.redis.get(`infoUser_${id}`, (err, res) => {
       if (err) return console.error(err);
       const json = JSON.parse(res);
       this.server.to(`${json.socketID}`).emit("updateRemoteService");
     });
   }
   @SubscribeMessage("createRoom")
-  createRoom(@MessageBody() data: any, @ConnectedSocket() client: any){
+  createRoom(@MessageBody() data: any, @ConnectedSocket() client: Socket){
     this.leaveRoom(client)
     (this.room = data.room), (this.idFriend = data.id);
     client.join([data.room]);
@@ -125,9 +126,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     return;
   }
   @SubscribeMessage("sendNotify")
-  async sendNotify(client: any): Promise<any>{
+  async sendNotify(client: Socket): Promise<any>{
     const roomId = await this.server.in(this.room).allSockets(),
-      res = await this.redis.get(`dataInit_${this.idFriend}`),
+      res = await this.redis.get(`infoUser_${this.idFriend}`),
       json = JSON.parse(res);
     this.updateFriendsPosition(this.idFriend, client);
     if (!roomId.has(json.socketID)) {
@@ -149,7 +150,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
   }
   @SubscribeMessage("acceptNewFriend")
-  acceptNewFriend(@MessageBody() idFriend: any, @ConnectedSocket() client: any){
+  acceptNewFriend(@MessageBody() idFriend: any, @ConnectedSocket() client: Socket){
      this.redis
       .get(`friendsPosition_${client.data.id}`, (err, data) => {
         if (err) 
@@ -185,7 +186,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(this.room).emit("sendMessage", JSON.parse(data))
   }
   @SubscribeMessage("updatePositionFriends")
-  updatePositionFriends(@MessageBody() friends: any, @ConnectedSocket() client: any){
+  updatePositionFriends(@MessageBody() friends: any, @ConnectedSocket() client: Socket){
     this.redis
     .pipeline()
     .set(`friendsPosition_${client.data.id}`, JSON.stringify(friends))
@@ -194,21 +195,21 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     });
   }
   @SubscribeMessage("getPositionFriends")
-  requireLastUpdate(client: any): any{
+  requireLastUpdate(client: Socket): any{
    this.redis.get(`friendsPosition_${client.data.id}`, (err, data) => {
       if (err) return console.error(err);
       client.emit("getPositionFriends", data);
     });
   }
   @SubscribeMessage("typing")
-  typing(@MessageBody() user: any, @ConnectedSocket() client: any): any{
+  typing(@MessageBody() user: any, @ConnectedSocket() client: Socket): any{
     client.broadcast.to(this.room).emit("typing", user) 
   }
   @SubscribeMessage("noTyping")
-  NoTyping(client: any): any{
+  NoTyping(client: Socket): any{
     client.to(this.room).emit("noTyping");
   }
-  handleDisconnect(client: any) {
+  handleDisconnect(client: Socket) {
     this.redis
       .pipeline()
       .set(`status_${client.data.id}`, "offline")

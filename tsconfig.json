@@ -13,7 +13,10 @@
     "incremental": true,
     "skipLibCheck": true,
     "allowJs": true,
-    "typeRoots" : ["./server/types", "./node_modules/@types"]
+    "paths": {
+      "socket.io": ["node_modules/socket.io", "server/types/socket.io"] 
+    },
+    "typeRoots" : ["server/types", "node_modules/@types"]
   },
   "include": ["server/**/*"],
 }
