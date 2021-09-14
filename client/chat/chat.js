@@ -3,20 +3,11 @@ import { hot } from "react-hot-loader";
 
 //Material UI
 import {
-  TextField,
-  Container,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  AppBar,
-  InputAdornment,
-  IconButton,
-  Divider,
-  Menu,
-  MenuItem,
-  Fade,
-  Link,
+  TextField, Container, Typography,
+  List, ListItem, ListItemText,
+  AppBar, InputAdornment, IconButton,
+  Divider, Menu, MenuItem,
+  Fade, Link,
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 
@@ -166,25 +157,24 @@ class Chat extends React.Component {
     super(props);
     const {socket, user} = context;
     this.state = {
-      isTyping: false,
-      selected: false,
-      chatSelected: false,
       friends: [],
-      actualChat: [],
-      canal: true,
+      messagesChat: [],
+      friendData: false,
+      isTyping: false,
+      ariaSelected: false,
+      openMessenger: true,
       anchorEl: null,
     };
-    this.handleClick = (e) => {
-      this.setState({
-        anchorEl: e.currentTarget,
-      });
-    };
-    this.handleClose = () => {
+    this.handleMenu = (e) => {
+      if(typeof this.state.anchorEl === null){}
+        return this.setState({
+          anchorEl: e.currentTarget,
+        });
       this.setState({
         anchorEl: null,
       });
     };
-    this.aria = (e) => {
+    this.getMessages = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
       if (e.target.getAttribute("aria-selected") === "false") {
@@ -192,58 +182,66 @@ class Chat extends React.Component {
           role.setAttribute("aria-selected", false);
         });
         e.target.setAttribute("aria-selected", true);
-        const nameDB = this.state.friends.filter((e) => e.name === name);
-        console.log(nameDB);
-        this.setState({ chatSelected: "SearchFriends" });
-        if (nameDB.length === 0) return this.setState({ canal: false });
+        const friendData = this.state.friends.filter((e) => e.name === name);
+        this.setState({ openMessenger: false });
+        console.log("frienData", friendData)
+        if (friendData.length === 0) 
+          return this.setState({ openMessenger: false });
         this.setState({
-          canal: true,
-          pos: `${nameDB[0].id}`,
-          chatSelected: `${nameDB[0].name}`,
+          openMessenger: true,
+          friendData: {
+            id: `${friendData[0].id}`,
+            nickname: `${friendData[0].name}`
+          } 
         });
         fetch(routesApi.getChat, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ id: nameDB[0].id }),
+          body: JSON.stringify({ id: friendData[0].id }),
         })
           .then((res) => res.json())
           .then((data) => {
             console.log(data)
             socket.emit("createRoom", {
               room: data.idChat,
-              id: nameDB[0].id,
+              id: friendData[0].id,
             });
             const newFriends = Array.from(this.state.friends);
-            newFriends[newFriends.findIndex((e) => e.id === nameDB[0].id)] = {
-              id: nameDB[0].id,
-              name: nameDB[0].name,
+            newFriends[newFriends.findIndex((e) => e.id === friendData[0].id)] = {
+              id: friendData[0].id,
+              name: friendData[0].name,
               notify: 0,
             };
-            document.querySelector(`#${nameDB[0].id}`).style.opacity = "0";
-            if (data.status === 400) return;
+            document.getElementById(`${friendData[0].id}`).style.opacity = "0";
+            if (data.status === 400) 
+              return;
             this.setState({
               friends: newFriends,
-              actualChat: [],
+              messagesChat: [],
             });
-            const json = data.dataChat[0].ChatData;
-            json.shift();
+            const messages = data.dataChat[0].ChatData;
+            messages.shift();
             this.setState({
-              actualChat: json,
+              messagesChat: messages,
               friends: newFriends,
             });
+            const chatBox = document.querySelector("#boxMensajes");
+            if (chatBox.scrollHeight) {
+              chatBox.scrollTop = chatBox.scrollHeight;
+            }
           });
       }
     };
     this.sendNotify = () => {
       socket.emit("sendNotify");
     }
-    socket.on("sendNotify", (n) => {
-      const data = document.getElementById(`${n.id}`);
+    socket.on("sendNotify", (user) => {
+      const data = document.getElementById(`${user.id}`);
       data.style.opacity = "1";
-      data.innerHTML = `${n.notify}`;
-      this.friendsPosition(n.id);
+      data.innerHTML = `${user.notify}`;
+      this.updateFriendsPosition(user.id);
     });
      this.reloadFriends = () => {
       fromFetch(routesApi.getAllFriends)
@@ -273,77 +271,53 @@ class Chat extends React.Component {
       socket.emit("getPositionFriends");
     };
     socket.on("getPositionFriends", (arr) => {
-      console.log("Updating chats...");
-      console.log(arr);
-      console.log("====state friends====");
-      console.log(this.state.friends);
       if (arr !== null) {
-        let currentArr = [],
-          array = JSON.parse(arr),
-          friends = Array.from(this.state.friends);
-        console.log(array);
-        for (let i = 0; i < friends.length; i++) {
-          if (array[i] !== undefined) {
-            console.log("array", array);
-            console.log("arraypos", array[i].id);
-            const posEl = this.state.friends.findIndex(
-              (ev) => ev.id === array[i].id
-            );
-            console.log("Position:", posEl);
-            console.log("this.state.friends:", this.state.friends[posEl]);
-            console.log("==current Array id===");
-            console.log(array[i]);
-            console.log("counter:", i);
-            if (posEl !== -1) {
-              console.log("push:", this.state.friends[posEl]);
-              currentArr.push(this.state.friends[posEl]);
-            }
+        const positionFriends = JSON.parse(arr)
+        let newFriendsPosition = this.state.friends.map((user, i) => {
+          if(positionFriends[i] !== undefined){
+            const posFriend = this.state.friends.findIndex(friend => friend.id === positionFriends[i].id )
+            if(posFriend > -1)
+              return this.state.friends[posFriend]
           }
-        }
-        for (const i of this.state.friends) {
-          const newPos = currentArr.findIndex((ev) => ev.id === i.id);
-          if (newPos == -1) {
-            currentArr.push(i);
-          }
-        }
+        })
+        Array.from(this.state.friends).forEach((user) => {
+          const posFriend = newFriendsPosition.findIndex((friend) => friend.id === user.id);
+          if(posFriend === -1)
+            newFriendsPosition.push(user) 
+        })
         this.setState({
-          friends: currentArr,
+          friends: newFriendsPosition,
         });
-        console.log(currentArr);
-        console.log(this.state.friends);
       }
     });
 
     this.statusChecker = () => {
       this.interval = setInterval(() => {
-        const friends = Array.from(this.state.friends);
-        for (let i of friends) {
-          socket.emit("checkOnline", { id: i.id, nickname: i.name });
-        }
+        Array.from(this.state.friends).forEach(friend => 
+          socket.emit("checkOnline", { id: friend.id, nickname: friend.name })
+        )
       }, 10000);
     };
-    socket.on("checkOnline", async (status) => {
+    socket.on("checkOnline", async (user) => {
       document.querySelector(
-        `#${status.nickname}`
-      ).style.backgroundColor = `${status.status}`;
+        `#${user.nickname}`
+      ).style.backgroundColor = `${user.status}`;
     });
-    this.friendsPosition = (chatSelected) => {
+
+    this.updateFriendsPosition = (id) => {
       return new Promise((resolve, reject) => {
-        const newArr = Array.from(this.state.friends),
-        nameDB = this.state.friends.findIndex(
-          (e) => e.id === parseInt(chatSelected)
-        );
-        console.log(chatSelected);
-        if (nameDB !== -1) {
-        console.log(this.state.friends[nameDB].name);
-        newArr.splice(nameDB, 1);
-        newArr.unshift(this.state.friends[nameDB]);
+        const friends = Array.from(this.state.friends),
+          idFriend = this.state.friends.findIndex(
+            (e) => e.id === id
+          );
+        if (idFriend !== -1) {
+        friends.splice(idFriend, 1);
+        friends.unshift(this.state.friends[idFriend]);
         this.setState({
-          friends: newArr,
+          friends: friends,
         });
-        console.log(newArr);
         }
-        resolve(newArr)
+        resolve(friends)
         reject([])
       })
     };
@@ -354,11 +328,7 @@ class Chat extends React.Component {
       subscriber.next(this.statusChecker());
       subscriber.complete();
     });
-    this.observable.subscribe({
-        next(x) { },
-        error(err) { console.error('something wrong occurred: ' + err); },
-        complete() { }
-    });
+    this.observable.subscribe();
   }
   componentWillUnmount() {
     const {socket} = this.context
@@ -367,7 +337,6 @@ class Chat extends React.Component {
     socket.off("sendNotify")
     clearInterval(this.interval);
   }
-
   render() {
     const { classes } = this.props;
     const open = Boolean(this.state.anchorEl);
@@ -384,7 +353,7 @@ class Chat extends React.Component {
             <IconButton
               color="inherit"
               style={{ display: "flex", alignSelf: "flex-end" }}
-              onClick={this.handleClick}
+              onClick={this.handleMenu}
               aria-controls="simple-menu" 
               aria-haspopup="true"
             >
@@ -395,7 +364,7 @@ class Chat extends React.Component {
               anchorEl={this.state.anchorEl}
               keepMounted
               open={open}
-              onClose={this.handleClose}
+              onClose={this.handleMenu}
               className={classes.menu}
             >
               <MenuItem onClick={this.handleClose}>
@@ -429,12 +398,12 @@ class Chat extends React.Component {
           <div
             id={"friends"}
             className={classes.friends}
-            onClick={this.aria}
+            onClick={this.getMessages}
             role="region"
           >
             <div className={classes.tools}>
               <div
-                aria-selected={this.state.selected}
+                aria-selected={this.state.ariaSelected}
                 role="option"
                 style={{
                   position: "absolute",
@@ -445,12 +414,12 @@ class Chat extends React.Component {
               <PersonIcon size="small" style={{ marginRight: 10 }} />
               <Typography variant="body1">Friends</Typography>
             </div>
-            {this.state.friends.map((val) => (
-              <div key={val.name} className={classes.aria}>
+            {this.state.friends.map((friend) => (
+              <div key={friend.name} className={classes.aria}>
                 <div
                   aria-selected="false"
                   role="option"
-                  name={val.name}
+                  name={friend.name}
                   style={{
                     position: "absolute",
                     width: "20%",
@@ -459,9 +428,9 @@ class Chat extends React.Component {
                   className={classes.select}
                 ></div>
                 <div
-                  id={val.name}
+                  id={friend.name}
                   className={classes.status}
-                  style={{ backgroundColor: val.status }}
+                  style={{ backgroundColor: friend.status }}
                 ></div>
 
                 <img
@@ -470,27 +439,25 @@ class Chat extends React.Component {
                   height="30"
                   style={{ borderRadius: "50%" }}
                 />
-                <p style={{ marginLeft: 15 }}>{val.name}</p>
+                <p style={{ marginLeft: 15 }}>{friend.name}</p>
                 <div
-                  id={val.id}
-                  style={{ opacity: val.notify >= 1 ? "1" : "0" }}
+                  id={friend.id}
+                  style={{ opacity: friend.notify >= 1 ? "1" : "0" }}
                   className={classes.notify}
                 >
-                  {val.notify}
+                  {friend.notify}
                 </div>
               </div>
             ))}
           </div>
         </div>
         <HandleScreen
-          canal={this.state.canal}
+          openMessenger={this.state.openMessenger}
           reloadFriends={this.reloadFriends}
-          defaultAv={defaultAv}
-          chatSelected={this.state.chatSelected}
-          pos={this.state.pos}
+          friendData={this.state.friendData}
           friends={this.state.friends}
-          friendsPosition={this.friendsPosition}
-          actualChat={this.state.actualChat}
+          updateFriendsPosition={this.updateFriendsPosition}
+          messagesChat={this.state.messagesChat}
           getPositionFriends={this.getPositionFriends}
           sendNotify={this.sendNotify}
         />

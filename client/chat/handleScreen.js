@@ -11,13 +11,13 @@ class HandleScreen extends React.Component {
     super(props);
     this.selectChat = () => {
       const { classes } = this.props;
-      if (this.props.canal) return <Messenger {...this.props} />;
+      if (this.props.openMessenger) return <Messenger {...this.props} />;
       return <Search {...this.props} />;
     };
   }
   render() {
     return (
-      <div>{this.props.chatSelected ? <this.selectChat /> : <MenuHome {...this.props}/>}</div>
+      <div>{this.props.friendData ? <this.selectChat /> : <MenuHome {...this.props}/>}</div>
     );
   }
 }

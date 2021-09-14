@@ -114,16 +114,16 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
   @SubscribeMessage("createRoom")
   createRoom(@MessageBody() data: any, @ConnectedSocket() client: Socket){
-    this.leaveRoom(client)
+    if (this.room !== undefined) 
+      client.leave(this.room);
     (this.room = data.room), (this.idFriend = data.id);
     client.join([data.room]);
     this.redis.set(`notify_${data.room}_${data.id}`, 0);
   }
   @SubscribeMessage("leaveRoom")
-  leaveRoom(client: Socket): any{
+  leaveRoom(client: Socket){
     if (this.room !== undefined) 
       client.leave(this.room);
-    return;
   }
   @SubscribeMessage("sendNotify")
   async sendNotify(client: Socket): Promise<any>{

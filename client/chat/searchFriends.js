@@ -225,34 +225,21 @@ class SearchFriends extends React.Component {
       })
         .then((res) => res.json())
         .then((data) => {
-          switch (data.message) {
-            case "The friend request has already been sent to the user!":
-              alert("The friend request has already been sent to the user!");
-              break;
-            case "The friend has already been added!":
-              alert(
-                "The friend has already been added!"
-              );
-              break;
-            case "Friend request has been send":
-              friend.value = "";
-              alert("Friend request has been send!");
-              socket.emit("updateRemoteService", data.idFriend)
-            break;
+          alert(data.message)
+          if(data.message === "Friend request has been send"){
+            friend.value = "";
+            socket.emit("updateRemoteService", data.idFriend)
           }
         });
     };
     socket.on("updateRemoteService", () => {this.loadFriends()})
-    this.accept = (e) => {
+    this.acceptFriendRequest = (e) => {
       e.preventDefault()
       const num = e.target.childNodes[0].defaultValue,
         accept = isNaN(num) ? -1 : num,
         nameDB = this.state.stash.find(
         (e) => e.id == accept
       );
-        console.log("default", accept)
-      console.log(nameDB)
-      console.log(nameDB.length)
       if(nameDB.length !== 0){
         fetch(`${routesApi.acceptFriends}`, {
           method: "POST",
@@ -261,24 +248,16 @@ class SearchFriends extends React.Component {
           },
           body: JSON.stringify({ idFriend: nameDB.id }),
         }).then((res) => {
-          if(res.status === 200){
+          if(res.ok){
             socket.emit("acceptNewFriend", nameDB.id)
-            this.acceptObservable.subscribe({
-                next(x) { },
-                error(err) { console.error('something wrong occurred: ' + err); },
-                complete() { console.log('done'); }
-            });
+            this.acceptObservable.subscribe();
             socket.emit("updateRemoteService", nameDB.id)
           }
         });
       }
     };
     socket.on("updateRemoteService", () => {
-      this.observable.subscribe({
-        next(x) { },
-        error(err) { console.error('something wrong occurred: ' + err); },
-        complete() { console.log('done'); }
-      })
+      this.observable.subscribe()
     })
     this.loadFriends = () => {
       fetch(`${routesApi.stashFriends}`)
@@ -295,7 +274,7 @@ class SearchFriends extends React.Component {
           }
         });
     };
-    this.cancel = (e) => {
+    this.cancelFriendRequest = (e) => {
       e.preventDefault()
       console.log(e)
       const num = e.target.childNodes[0].defaultValue,
@@ -320,19 +299,20 @@ class SearchFriends extends React.Component {
     };
   }
   componentDidMount() {
+    const {reloadFriends, getPositionFriends}= this.props
     this.acceptObservable = new Observable(subscriber => {
-      subscriber.next(this.props.reloadFriends())
+      subscriber.next(reloadFriends())
       subscriber.next(this.loadFriends())
-      subscriber.next(this.props.getPositionFriends());
+      subscriber.next(getPositionFriends());
       subscriber.complete();
     });
     this.observable = new Observable(subscriber => {
-      subscriber.next(this.props.reloadFriends())
-      subscriber.next(this.props.getPositionFriends())
+      subscriber.next(reloadFriends())
+      subscriber.next(getPositionFriends())
       subscriber.complete()
     })
     this.loadFriends();
-    this.context.emit("leaveRoom")
+    this.context.socket.emit("leaveRoom")
   }
 
   render() {
@@ -362,7 +342,7 @@ class SearchFriends extends React.Component {
                   <p style={{marginLeft: 15}}>{e.name}</p>
                 </div>
                 <div style={{display:"flex"}}>
-                  <form onSubmit={this.accept}>
+                  <form onSubmit={this.acceptFriendRequest}>
                     <input  style={{display:"none"}} defaultValue={e.id}/>
                     <button 
                       className="button-red MuiButtonBase-root MuiButton-root MuiButton-text" 
@@ -371,7 +351,7 @@ class SearchFriends extends React.Component {
                       Añadir
                     </button>
                   </form>
-                  <form onSubmit={this.cancel}>
+                  <form onSubmit={this.cancelFriendRequest}>
                     <input style={{display:"none"}} defaultValue={e.id}/>
                     <button 
                       className="button-green MuiButtonBase-root MuiButton-root MuiButton-text" 

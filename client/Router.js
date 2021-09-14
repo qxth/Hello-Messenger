@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Route, Switch } from "react-router-dom";
+import { Route, Switch, withRouter } from "react-router-dom";
 
 // Componentes
 import Chat from "./chat/chat";
@@ -30,40 +30,37 @@ const Router = () => {
         } 
       })
       .catch(e => setRoutes(false))
-  });
-  const Routes = () => {
-    if (routes)
-      return ( 
-          <React.Fragment>  
-            <AppContext.Provider value={{
-              user: dataUser.nickname,
-              socket: Socket
-            }}>    
-              <Switch>
-                  <Route exact path="/" component={Home} />
-                  <Route exact path="/chat" component={Chat} />
-                  <Route exact path="/logout" component={LogOut} />
-                  <Route exact path="/*" component={NotFound} />
-              </Switch>
-            </AppContext.Provider>  
-          </React.Fragment>
+  }, []);
+  const AuthorizedRoutes = () => {
+    return ( 
+        <AppContext.Provider value={{
+          user: dataUser.nickname,
+          socket: Socket
+        }}>    
+          <Switch>
+              <Route exact path="/" component={Home} />
+              <Route path="/chat" component={Chat} />
+              <Route path="/logout" component={LogOut} />
+              <Route component={NotFound} />
+          </Switch>
+        </AppContext.Provider>  
       );
+  }
+  const NotAuthorizedRoutes = () => {
     return (
-      <React.Fragment>
         <Switch>
           <Route exact path="/" component={Home} />
-          <Route exact path="/login" component={Login} />
-          <Route exact path="/register" component={Register} />
-          <Route exact path="/*" component={NotFound} />
+          <Route path="/login" component={Login} />
+          <Route path="/register" component={Register} />
+          <Route component={NotFound} />
         </Switch>
-      </React.Fragment>
     );
-  };
+  }
   return (
     <div>
-      <Routes />
+    {routes ? <AuthorizedRoutes/> : <NotAuthorizedRoutes/> }
     </div>
   );
 };
 
-export default Router;
+export default withRouter(Router);

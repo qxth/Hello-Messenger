@@ -118,7 +118,7 @@ const styles = {
 class Login extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    
     this.submit = (e) => {
       e.preventDefault();
       fetch(routes.logIn, {

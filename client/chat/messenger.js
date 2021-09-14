@@ -140,6 +140,7 @@ class Messenger extends React.Component {
       isTyping: false,
     };
     const {socket, user} = context;
+    const {updateFriendsPosition, friends, friendData} = this.props
     this.submitMessage = (e) => {
       e.preventDefault();
       let valInput = document.querySelector("#message")
@@ -154,15 +155,11 @@ class Messenger extends React.Component {
             date: new Date(),
           };
         valInput.value = "";
-        this.props.friendsPosition(this.props.pos)
+        updateFriendsPosition(friendData.id)
         .then(data => {
-          this.context.emit("updatePositionFriends", this.props.friends)
+          socket.emit("updatePositionFriends", friends)
         })
-        this.observable.subscribe({
-            next(x) { },
-            error(err) { console.error('something wrong occurred: ' + err); },
-            complete() { console.log('done'); }
-        });
+        this.observable.subscribe();
 
         socket.emit("sendMessage", JSON.stringify(data));
         const chatBox = document.querySelector("#mensajes");
@@ -224,8 +221,8 @@ class Messenger extends React.Component {
       }
     };
     socket.on("typing", (username) => {
-      document.getElementById(
-        "istyping"
+      document.querySelector(
+        "#istyping"
       ).textContent = `${username} esta escribiendo...`;
     });
 
@@ -238,13 +235,16 @@ class Messenger extends React.Component {
     this.onEmojiClick = (e, emojiObject) => {
       let chosenEmoji = null;
       chosenEmoji = emojiObject;
-      document.getElementById("message").value += chosenEmoji.emoji;
+      const inputMessage = document.querySelector("#message")
+      const inputValue = inputMessage.value
+      const positionCursor = inputMessage.selectionStart
+      const newMessage = 
+      inputValue.slice(0, positionCursor) + 
+      chosenEmoji.emoji + 
+      inputValue.slice(positionCursor);
+      
+      inputMessage.value = newMessage
       this.TyperHandler()
-    };
-    this.icons = () => {
-      if (this.state.ShowEmojis == false)
-        return this.setState({ ShowEmojis: true });
-      this.setState({ ShowEmojis: false });
     };
   }
   componentDidMount() {
@@ -252,13 +252,6 @@ class Messenger extends React.Component {
       subscriber.next(this.props.sendNotify())
       subscriber.complete();
     });
-    this.checkScroll = setInterval(() => {
-      const chatBox = document.querySelector("#boxMensajes");
-      if (chatBox.scrollHeight) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-        clearInterval(this.checkScroll);
-      }
-    }, 1000);
   }
   componentWillUnmount() {
     const socket = this.context.socket
@@ -269,11 +262,11 @@ class Messenger extends React.Component {
     socket.off("typing");
   }
   render() {
-    const { classes } = this.props;
+    const { classes, friendData, messagesChat} = this.props;
     return (
       <React.Fragment>
         <div className={classes.channel}>
-          <Typography variant="h6">{this.props.chatSelected}</Typography>
+          <Typography variant="h6">{friendData.nickname}</Typography>
           <IconButton
             color="inherit"
             style={{
@@ -288,7 +281,7 @@ class Messenger extends React.Component {
         </div>
         <div id={"boxMensajes"} className={classes.boxMensajes}>
           <ul className={classes.mensajes} id={"mensajes"}>
-            {this.props.actualChat.map((e, index) => (
+            {messagesChat.map((e, index) => (
               <React.Fragment key={index}>
                 <li>
                   <img src={defaultAv} width="24" height="24" />
@@ -316,7 +309,11 @@ class Messenger extends React.Component {
                 required
                 onSubmit={this.submitMessage}
               >
-                <IconButton color="inherit" onClick={this.icons}>
+                <IconButton color="inherit" onClick={() => (
+                  this.state.ShowEmojis ?  
+                    this.setState({ ShowEmojis: false }) : 
+                    this.setState({ ShowEmojis: true })
+                )}>
                   <InsertEmoticonIcon style={{ color: "#828689" }} />
                 </IconButton>
                 <TextField
