@@ -98,8 +98,7 @@ export class ChatService {
 		if(stash.length > 1)
 			throw new HttpException({
 				status:  HttpStatus.BAD_REQUEST, 
-				message: 'Friend request', 
-				chat: 'The friend request has already been sent to the user!'
+				message: 'The friend request has already been sent to the user!', 
 			}, HttpStatus.BAD_REQUEST);
 		const friend = await this.friendsRepository
 		.createQueryBuilder("Friends")
@@ -110,8 +109,7 @@ export class ChatService {
 		if(stash.length > 1)
 		throw new HttpException({
 			status:  HttpStatus.BAD_REQUEST, 
-			message: 'Friend request', 
-			chat: 'The friend has already been added!'
+			message: 'The friend has already been added!' 
 		}, HttpStatus.BAD_REQUEST);
 		const stashData = new StashFriends()
 		stashData.id = id

@@ -162,7 +162,7 @@ class Chat extends React.Component {
       friendData: false,
       isTyping: false,
       ariaSelected: false,
-      openMessenger: true,
+      openScreens: false,
       anchorEl: null,
     };
     this.handleMenu = (e) => {
@@ -174,6 +174,9 @@ class Chat extends React.Component {
         anchorEl: null,
       });
     };
+    this.updateNewMessage = (msg) => {
+      this.setState({messagesChat: [...this.state.messagesChat, {user: msg.user, message: msg.message}]})
+    }
     this.getMessages = (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
@@ -183,12 +186,10 @@ class Chat extends React.Component {
         });
         e.target.setAttribute("aria-selected", true);
         const friendData = this.state.friends.filter((e) => e.name === name);
-        this.setState({ openMessenger: false });
-        console.log("frienData", friendData)
         if (friendData.length === 0) 
-          return this.setState({ openMessenger: false });
+          return this.setState({ openScreens: true, friendData: false });
         this.setState({
-          openMessenger: true,
+          openScreens: true,
           friendData: {
             id: `${friendData[0].id}`,
             nickname: `${friendData[0].name}`
@@ -203,7 +204,6 @@ class Chat extends React.Component {
         })
           .then((res) => res.json())
           .then((data) => {
-            console.log(data)
             socket.emit("createRoom", {
               room: data.idChat,
               id: friendData[0].id,
@@ -218,9 +218,8 @@ class Chat extends React.Component {
             if (data.status === 400) 
               return;
             this.setState({
-              friends: newFriends,
-              messagesChat: [],
-            });
+              friends: newFriends
+            });            
             const messages = data.dataChat[0].ChatData;
             messages.shift();
             this.setState({
@@ -255,18 +254,18 @@ class Chat extends React.Component {
           for (let i of data.rows) {
             socket.emit("loadNotify", { id: i.user_id, name: i.user_nickname });
           }
-          socket.on("loadNotify", (n) => {
-            this.setState({
-            friends: [
-              ...this.state.friends,
-              { id: n.id, name: n.nickname, notify: n.notify }
-            ]})
-            if(data.rows.length === this.state.friends.length){
-              this.getPositionFriends()
-            }
-          })
+          if(data.rows.length === this.state.friends.length)
+            this.getPositionFriends()
         })  
     };
+    socket.on("loadNotify", (n) => {
+      this.setState({
+        friends: [
+          ...this.state.friends,
+          { id: n.id, name: n.nickname, notify: n.notify }
+        ]
+      })
+    })
     this.getPositionFriends = () => {
       socket.emit("getPositionFriends");
     };
@@ -275,13 +274,13 @@ class Chat extends React.Component {
         const positionFriends = JSON.parse(arr)
         let newFriendsPosition = this.state.friends.map((user, i) => {
           if(positionFriends[i] !== undefined){
-            const posFriend = this.state.friends.findIndex(friend => friend.id === positionFriends[i].id )
+            const posFriend = this.state.friends.findIndex(friend => friend.id === parseInt(positionFriends[i].id) )
             if(posFriend > -1)
               return this.state.friends[posFriend]
           }
         })
         Array.from(this.state.friends).forEach((user) => {
-          const posFriend = newFriendsPosition.findIndex((friend) => friend.id === user.id);
+          const posFriend = newFriendsPosition.findIndex((friend) => friend.id === parseInt(user.id));
           if(posFriend === -1)
             newFriendsPosition.push(user) 
         })
@@ -304,12 +303,12 @@ class Chat extends React.Component {
       ).style.backgroundColor = `${user.status}`;
     });
 
-    this.updateFriendsPosition = (id) => {
+    this.updateFriendsPosition = (id = this.state.friendData.id) => {
       return new Promise((resolve, reject) => {
         const friends = Array.from(this.state.friends),
           idFriend = this.state.friends.findIndex(
-            (e) => e.id === id
-          );
+            (e) => e.id === parseInt(id)
+          )
         if (idFriend !== -1) {
         friends.splice(idFriend, 1);
         friends.unshift(this.state.friends[idFriend]);
@@ -335,7 +334,6 @@ class Chat extends React.Component {
     socket.off("getPositionFriends")
     socket.off("loadNotify")
     socket.off("sendNotify")
-    clearInterval(this.interval);
   }
   render() {
     const { classes } = this.props;
@@ -452,13 +450,14 @@ class Chat extends React.Component {
           </div>
         </div>
         <HandleScreen
-          openMessenger={this.state.openMessenger}
+          openScreens={this.state.openScreens}
           reloadFriends={this.reloadFriends}
           friendData={this.state.friendData}
           friends={this.state.friends}
           updateFriendsPosition={this.updateFriendsPosition}
           messagesChat={this.state.messagesChat}
           getPositionFriends={this.getPositionFriends}
+          updateNewMessage={this.updateNewMessage}
           sendNotify={this.sendNotify}
         />
       </div>

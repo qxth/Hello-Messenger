@@ -155,11 +155,11 @@ class Messenger extends React.Component {
             date: new Date(),
           };
         valInput.value = "";
-        updateFriendsPosition(friendData.id)
-        .then(data => {
-          socket.emit("updatePositionFriends", friends)
-        })
-        this.observable.subscribe();
+        updateFriendsPosition()
+        .then(newFriendsPosition => {
+          socket.emit("updatePositionFriends", newFriendsPosition)
+          this.observable.subscribe();
+        }) 
 
         socket.emit("sendMessage", JSON.stringify(data));
         const chatBox = document.querySelector("#mensajes");
@@ -168,29 +168,7 @@ class Messenger extends React.Component {
     };
 
     socket.on("sendMessage", (msg) => {
-      console.log(msg)
-      let img = document.createElement("img");
-      img.src = "/dist/051210ccc8930db279f318fbbbc3e2cf.png";
-      img.width = "24";
-      img.height = "24";
-      img.style.borderRadius = "50%";
-      img.style.marginTop = "1%";
-      img.style.marginLeft = "1%";
-      img.style.marginRight = "6px";
-
-      const node = document.createElement("LI"),
-        textnode = document.createTextNode(`${msg.user}`),
-        node2 = document.createElement("LI"),
-        textnode2 = document.createTextNode(`${msg.message}`);
-      node2.style.marginTop = "9px";
-      node2.style.marginLeft = "30px";
-
-      node.appendChild(img);
-      node.appendChild(textnode);
-      node2.appendChild(textnode2);
-
-      document.querySelector("#mensajes").appendChild(node);
-      document.querySelector("#mensajes").appendChild(node2);
+      this.props.updateNewMessage(msg)
       const chatBox = document.querySelector("#boxMensajes");
       chatBox.scrollTop = chatBox.scrollHeight;
       this.NoTyp();
@@ -215,15 +193,15 @@ class Messenger extends React.Component {
     this.Typing= () => {
       if (document.querySelector("#message").value != "") {
         this.setState({ isTyping: true });
-        socket.emit("typing", user);
+        socket.emit("typing");
         console.log("typing");
         setTimeout(this.NoTypInterval, 5000);
       }
     };
-    socket.on("typing", (username) => {
+    socket.on("typing", (nickname) => {
       document.querySelector(
         "#istyping"
-      ).textContent = `${username} esta escribiendo...`;
+      ).textContent = `${nickname} esta escribiendo...`;
     });
 
     this.TyperHandler = (e) => {
@@ -255,11 +233,11 @@ class Messenger extends React.Component {
   }
   componentWillUnmount() {
     const socket = this.context.socket
-    socket.off("sendMessage");
-    socket.off("sendNotify");
-    socket.off("updatePositionFriends");
-    socket.off("noTyping");
-    socket.off("typing");
+    socket.off("sendMessage", this.submitMessage);
+    socket.off("sendNotify", this.props.sendNotify);
+    socket.off("updatePositionFriends", this.props.updateFriendsPosition)
+    socket.off("noTyping", this.NoTyp);
+    socket.off("typing", this.Typing);
   }
   render() {
     const { classes, friendData, messagesChat} = this.props;
