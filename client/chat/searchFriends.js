@@ -207,7 +207,7 @@ class SearchFriends extends React.Component {
   constructor(props, context) {
     super(props);
     this.state = {
-      stash: [],
+      friendRequest: [],
     };
     this.acceptObservable;
     this.observable;
@@ -232,12 +232,14 @@ class SearchFriends extends React.Component {
           }
         });
     };
-    socket.on("updateRemoteService", () => {this.loadFriends()})
+    socket.on("updateRemoteService", () => {
+      this.getFriendRequest()
+    })
     this.acceptFriendRequest = (e) => {
       e.preventDefault()
       const num = e.target.childNodes[0].defaultValue,
         accept = isNaN(num) ? -1 : num,
-        nameDB = this.state.stash.find(
+        nameDB = this.state.friendRequest.find(
         (e) => e.id == accept
       );
       if(nameDB.length !== 0){
@@ -249,28 +251,36 @@ class SearchFriends extends React.Component {
           body: JSON.stringify({ idFriend: nameDB.id }),
         }).then((res) => {
           if(res.ok){
+            this.acceptObservable.subscribe({
+              next(x) { console.log("excecuting accept") },
+              error(err) { console.error('something wrong occurred: ' + err); },
+              complete() { console.log('done'); }
+            });
             socket.emit("acceptNewFriend", nameDB.id)
-            this.acceptObservable.subscribe();
             socket.emit("updateRemoteService", nameDB.id)
           }
         });
       }
     };
     socket.on("updateRemoteService", () => {
-      this.observable.subscribe()
+      this.observable.subscribe({
+        next(x) { },
+        error(err) { console.error('something wrong occurred: ' + err); },
+        complete() { console.log('done'); }
+      });
     })
-    this.loadFriends = () => {
+    this.getFriendRequest = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
         .then((data) => {
-          console.log("loading stash friends...")
-          console.log(data);
-          this.setState({stash: []});
+          this.setState({friendRequest: []});
           for (let i of data.rows) {
             this.setState({
-              stash: [...this.state.stash, { id: i.user_id, name: i.user_nickname }],
+              friendRequest: [...this.state.friendRequest, { id: i.user_id, name: i.user_nickname }],
             });
-            console.log(this.state.stash);
+            console.log("===Friend requests===")
+            console.log(this.state.friendRequest)
+            console.log("===========")
           }
         });
     };
@@ -279,7 +289,7 @@ class SearchFriends extends React.Component {
       console.log(e)
       const num = e.target.childNodes[0].defaultValue,
         cancel = isNaN(num) ? -1 : num,
-        nameDB = this.state.stash.find(
+        nameDB = this.state.friendRequest.find(
         (e) => e.id == cancel
       );
       console.log(nameDB);
@@ -293,7 +303,7 @@ class SearchFriends extends React.Component {
         })
         .then((e) => {
           if(e.ok)
-            return this.loadFriends();            
+            return this.getFriendRequest();            
         })
       }
     };
@@ -302,7 +312,7 @@ class SearchFriends extends React.Component {
     const {reloadFriends, getPositionFriends}= this.props
     this.acceptObservable = new Observable(subscriber => {
       subscriber.next(reloadFriends())
-      subscriber.next(this.loadFriends())
+      subscriber.next(this.getFriendRequest())
       subscriber.next(getPositionFriends());
       subscriber.complete();
     });
@@ -311,7 +321,7 @@ class SearchFriends extends React.Component {
       subscriber.next(getPositionFriends())
       subscriber.complete()
     })
-    this.loadFriends();
+    this.getFriendRequest();
     this.context.socket.emit("leaveRoom")
   }
 
@@ -330,7 +340,7 @@ class SearchFriends extends React.Component {
             <Button type="submit">Add friend</Button>
           </form>
           <div id={"stash"}>
-            {this.state.stash.map((e)=>(
+            {this.state.friendRequest.map((e)=>(
               <div key={e.id} className={classes.aria}>
                 <div style={{display: "flex", alignItems:"center"}}>
                   <img 

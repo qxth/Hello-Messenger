@@ -104,7 +104,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
   @SubscribeMessage("updateRemoteService")
   updateRemoteService(@MessageBody() id: any){
-    console.log("id", id)
     this.redis.get(`infoUser:${id}`, (err, res) => {
       if (err) return console.error(err);
       const json = JSON.parse(res);
@@ -206,7 +205,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
   @SubscribeMessage("updatePositionFriends")
   updatePositionFriends(@MessageBody() friends: any, @ConnectedSocket() client: Socket){
-    console.log("data updatePositionFriends", friends)
     this.redis
     .pipeline()
     .set(`friendsPosition:${client.data.id}`, JSON.stringify(friends))

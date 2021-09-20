@@ -216,6 +216,9 @@ class Messenger extends React.Component {
       const inputMessage = document.querySelector("#message")
       const inputValue = inputMessage.value
       const positionCursor = inputMessage.selectionStart
+      console.log("=====Position cursor======")
+      console.log(positionCursor)
+      console.log("==========================")
       const newMessage = 
       inputValue.slice(0, positionCursor) + 
       chosenEmoji.emoji + 
