@@ -9,14 +9,15 @@ import Messenger from "./messenger";
 class HandleScreen extends React.Component {
   constructor(props) {
     super(props);
-    this.selectChat = () => {
+    this.ScreenSelected = () => {
       const component = this.props.friendData ? <Messenger {...this.props} /> : <Search {...this.props} />
       return component
     };
   }
   render() {
+    const {isOpenScreens} = this.props
     return (
-      <div>{this.props.openScreens ? <this.selectChat /> : <MenuHome {...this.props}/>}</div>
+      <div>{isOpenScreens ? <this.ScreenSelected /> : <MenuHome {...this.props}/>}</div>
     );
   }
 }

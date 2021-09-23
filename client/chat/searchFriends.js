@@ -233,7 +233,7 @@ class SearchFriends extends React.Component {
         });
     };
     socket.on("updateRemoteService", () => {
-      this.getFriendRequest()
+      this.getFriendsRequest()
     })
     this.acceptFriendRequest = (e) => {
       e.preventDefault()
@@ -269,7 +269,7 @@ class SearchFriends extends React.Component {
         complete() { console.log('done'); }
       });
     })
-    this.getFriendRequest = () => {
+    this.getFriendsRequest = () => {
       fetch(`${routesApi.stashFriends}`)
         .then((res) => res.json())
         .then((data) => {
@@ -303,16 +303,16 @@ class SearchFriends extends React.Component {
         })
         .then((e) => {
           if(e.ok)
-            return this.getFriendRequest();            
+            return this.getFriendsRequest();            
         })
       }
     };
   }
   componentDidMount() {
-    const {reloadFriends, getPositionFriends}= this.props
+    const {reloadFriends, getPositionFriends, updateFriendsPosition}= this.props
     this.acceptObservable = new Observable(subscriber => {
       subscriber.next(reloadFriends())
-      subscriber.next(this.getFriendRequest())
+      subscriber.next(this.getFriendsRequest())
       subscriber.next(getPositionFriends());
       subscriber.complete();
     });
@@ -321,7 +321,7 @@ class SearchFriends extends React.Component {
       subscriber.next(getPositionFriends())
       subscriber.complete()
     })
-    this.getFriendRequest();
+    this.getFriendsRequest();
     this.context.socket.emit("leaveRoom")
   }
 

@@ -158,15 +158,16 @@ class Chat extends React.Component {
     const {socket, user} = context;
     this.state = {
       friends: [],
+      friendsLength: 0,
       messagesChat: [],
       friendData: false,
       isTyping: false,
-      ariaSelected: false,
-      openScreens: false,
+      isAriaSelected: false,
+      isOpenScreens: false,
       anchorEl: null,
     };
     this.handleMenu = (e) => {
-      if(typeof this.state.anchorEl === null){}
+      if(typeof this.state.anchorEl === null)
         return this.setState({
           anchorEl: e.currentTarget,
         });
@@ -187,9 +188,9 @@ class Chat extends React.Component {
         e.target.setAttribute("aria-selected", true);
         const friendData = this.state.friends.filter((e) => e.name === name);
         if (friendData.length === 0) 
-          return this.setState({ openScreens: true, friendData: false });
+          return this.setState({ isOpenScreens: true, friendData: false });
         this.setState({
-          openScreens: true,
+          isOpenScreens: true,
           friendData: {
             id: `${friendData[0].id}`,
             nickname: `${friendData[0].name}`
@@ -242,29 +243,28 @@ class Chat extends React.Component {
       data.innerHTML = `${user.notify}`;
       this.updateFriendsPosition(user.id);
     });
-     this.reloadFriends = () => {
-      fromFetch(routesApi.getAllFriends)
-        .pipe(
-          mergeMap(res => res.json())
-        )
-        .subscribe(data => {
-          this.setState({
-            friends: [],
-          });
-          for (let i of data.rows) {
-            socket.emit("loadNotify", { id: i.user_id, name: i.user_nickname });
-          }
-          if(data.rows.length === this.state.friends.length)
-            this.getPositionFriends()
-        })  
-    };
-    socket.on("loadNotify", (n) => {
+     this.reloadFriends = async () => {
+      fetch(routesApi.getAllFriends)
+      .then(res => res.json())
+      .then(friends => {
+        this.setState({
+          friends: [],
+          friendsLength: friends.rows.length
+        });
+        friends.rows.forEach((friend) => {
+          socket.emit("loadNotify", { id: friend["user_id"], name: friend["user_nickname"] });
+        })
+      })
+     }
+    socket.on("loadNotify", (friend) => {
       this.setState({
         friends: [
           ...this.state.friends,
-          { id: n.id, name: n.nickname, notify: n.notify }
+          { id: friend.id, name: friend.nickname, notify: friend.notify }
         ]
       })
+      if(this.state.friendsLength === this.state.friends.length)
+        this.getPositionFriends()
     })
     this.getPositionFriends = () => {
       socket.emit("getPositionFriends");
@@ -295,7 +295,7 @@ class Chat extends React.Component {
         Array.from(this.state.friends).forEach(friend => 
           socket.emit("checkOnline", { id: friend.id, nickname: friend.name })
         )
-      }, 10000);
+      }, 1e4);
     };
     socket.on("checkOnline", async (user) => {
       document.querySelector(
@@ -326,8 +326,12 @@ class Chat extends React.Component {
     this.observable = new Observable(subscriber => {
       subscriber.next(this.statusChecker());
       subscriber.complete();
+    });  
+    this.observable.subscribe({
+      next(x) { },
+      error(err) { console.error('something wrong occurred: ' + err); },
+      complete() { }
     });
-    this.observable.subscribe();
   }
   componentWillUnmount() {
     const {socket} = this.context
@@ -401,7 +405,7 @@ class Chat extends React.Component {
           >
             <div className={classes.tools}>
               <div
-                aria-selected={this.state.ariaSelected}
+                aria-selected={this.state.isAriaSelected}
                 role="option"
                 style={{
                   position: "absolute",
@@ -450,7 +454,7 @@ class Chat extends React.Component {
           </div>
         </div>
         <HandleScreen
-          openScreens={this.state.openScreens}
+          isOpenScreens={this.state.isOpenScreens}
           reloadFriends={this.reloadFriends}
           friendData={this.state.friendData}
           friends={this.state.friends}
