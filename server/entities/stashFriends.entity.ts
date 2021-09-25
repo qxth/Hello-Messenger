@@ -9,10 +9,10 @@ export class StashFriends {
   @PrimaryGeneratedColumn()
   idStash: number;
 
-  @Column("int")
+  @Column({type: "int", unique: true})
   id: number;
 
-  @Column("int")
+  @Column({type: "int", unique: true})
   idFriend: number;
 
   @ManyToOne(() => User, user => user.stashFriends, {eager: true})

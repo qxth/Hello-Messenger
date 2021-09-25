@@ -14,8 +14,8 @@ import { Friends } from './entities/friends.entity'
 import {StashFriends} from './entities/stashFriends.entity'
 import template from './../index.js'
 import routes from './../utils/routes-api'
-import {AppController} from './app.controller'
 import {EventsModule} from './events/events.module'
+import { createConnection } from 'typeorm';
 
 @Module({
   imports: [
@@ -29,14 +29,11 @@ import {EventsModule} from './events/events.module'
 		password: "",
 		database: "ChatApp",
 		charset: "utf8mb4_unicode_ci",
-		
 		entities: [User, Questions, Chat, Friends, StashFriends],
 		synchronize: true
 	})
   ],
-  //controllers: [AppController]
 })
-//export class AppModule{}
 
 export class AppModule implements NestModule{
 	  configure(consumer: MiddlewareConsumer) {

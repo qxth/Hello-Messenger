@@ -53,6 +53,7 @@ export class ChatService {
 		.innerJoin('Friends.user', 'user')
 		.select(['user.id', 'user.nickname'])
 		.where({idUser: req.user.id})
+		.orderBy('Friends.idChat', 'ASC')
 		.getRawMany()
 		return res.status(HttpStatus.OK).json({
 			status: 200,
@@ -66,6 +67,7 @@ export class ChatService {
 		.innerJoin('stashFriends.user', 'user')
 		.select(['user.id', 'user.nickname'])
 		.where({idFriend: req.user.id})
+		.orderBy('stashFriends.idStash', 'ASC')
 		.getRawMany()
 		return res.status(HttpStatus.OK).json({
 			status: 200,
@@ -73,17 +75,15 @@ export class ChatService {
 		})
 	}
 	async addFriends(req: Request, res: Response): Promise<any>{
-		const id = req.user.id
-		const idFriend = req.body.idFriend
-	    const user = await this.userRepository.createQueryBuilder("UserData")
+		const id = req.user.id,
+		 user = await this.userRepository.createQueryBuilder("UserData")
 	    .select(['id', 'nickname'])
 	    .where({nickname: req.body.nickname})
-	    .getRawMany()
-	    if(user.length < 1 && id === user[0].id)
+	    .getRawMany();
+	    if(user.length > 0 && id === user[0].id)
 			throw new HttpException({
 				status:  HttpStatus.BAD_REQUEST, 
-				message: 'Not found', 
-				chat: 'User not found!'
+				message: 'User not found!' 
 			}, HttpStatus.BAD_REQUEST);
     	const stash = await this.stashFriendsRepository
     	.createQueryBuilder("stashFriends")
@@ -95,7 +95,8 @@ export class ChatService {
 			.andWhere({id: id})
 		}))
 		.getRawMany()
-		if(stash.length > 1)
+		console.log(stash.length)
+		if(stash.length >= 1)
 			throw new HttpException({
 				status:  HttpStatus.BAD_REQUEST, 
 				message: 'The friend request has already been sent to the user!', 
@@ -106,7 +107,7 @@ export class ChatService {
 	    .where({idUser: id})
 	    .andWhere({idFriend: user[0].id})
 	    .getRawMany()
-		if(stash.length > 1)
+		if(friend.length >= 1)
 		throw new HttpException({
 			status:  HttpStatus.BAD_REQUEST, 
 			message: 'The friend has already been added!' 

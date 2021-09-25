@@ -104,12 +104,14 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
   @SubscribeMessage("updateRemoteService")
   updateRemoteService(@MessageBody() id: any){
-    console.log("id", id)
-    this.redis.get(`infoUser:${id}`, (err, res) => {
-      if (err) return console.error(err);
-      const json = JSON.parse(res);
-      this.server.to(`${json.socketID}`).emit("updateRemoteService");
-    });
+      this.redis.get(`infoUser:${id}`, (err, data) => {
+        if (err) 
+          return console.log(err);
+        if(!data)
+          return;
+        const json = JSON.parse(data);
+        this.server.to(`${json.socketID}`).emit("updateRemoteService");
+      });
   }
   @SubscribeMessage("createRoom")
   createRoom(@MessageBody() dataChat: any, @ConnectedSocket() client: Socket){

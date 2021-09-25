@@ -212,7 +212,7 @@ class SearchFriends extends React.Component {
     this.acceptObservable;
     this.observable;
     const {socket} = context;
-    this.searchFriends = (e) => {
+    this.searchFriend = (e) => {
       e.preventDefault();
       const friend = document.querySelector("#nickname");
       console.log(friend);
@@ -330,7 +330,7 @@ class SearchFriends extends React.Component {
     return (
       <div className={classes.fondo}>
         <div className={classes.boxSearchFriends}>
-          <form onSubmit={this.searchFriends} className={classes.form}>
+          <form onSubmit={this.searchFriend} className={classes.form}>
             <input
               required
               id={"nickname"}
