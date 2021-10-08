@@ -2,7 +2,7 @@ import {
   Controller, 
   Get, Delete, Post,
   Req, Res, 
-  HttpStatus, UseGuards
+  HttpStatus, UseGuards, Param
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import routes from './../../utils/routes-api'
@@ -16,6 +16,15 @@ export class ChatController {
   @Post(routes.getChat)
   async getChat(@Req() req: Request, @Res() res: Response): Promise<any>{
     return await this.chatService.getAllHistory(req, res)
+  }
+  @Get(`${routes.getFileMessage}/:idChat/:idImage`)
+  async getFileMessage(
+    @Req() req: Request, 
+    @Res() res: Response, 
+    @Param('idChat') idChat,
+    @Param('idImage') idImage
+  ): Promise<any>{
+    return await this.chatService.getFileMessage(req, res, {idChat:idChat, idImage: idImage})
   }
   @Get(routes.getAllFriends)
   async getAllFriends(@Req() req: Request, @Res() res: Response): Promise<any>{

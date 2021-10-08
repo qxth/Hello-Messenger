@@ -12,7 +12,7 @@ import {
   AppBar,
   InputAdornment,
   IconButton,
-  Divider,
+  Backdrop
 } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 import {
@@ -20,6 +20,7 @@ import {
   VideoCall as VideoCallIcon,
   Send as SendIcon,
   InsertEmoticon as InsertEmoticonIcon,
+  AttachFile as AttachFileIcon
 } from "@material-ui/icons";
 
 //Extras
@@ -27,8 +28,10 @@ import defaultAv from "./../img/icon.png";
 import Picker from "emoji-picker-react";
 import {Observable} from 'rxjs';
 import {AppContext} from "./../../utils/app-context";
+import routesApi from "./../../utils/routes-api";
+import FileEditor from './fileEditor'
 
-const styles = {
+const styles = theme => ({
   channel: {
     display: "flex",
     border: "1px solid #3c4144",
@@ -70,7 +73,6 @@ const styles = {
     padding: 0,
     "& > li": {
       maxWidth: 800,
-      maxHeight: 200,
       color: "#c7cccf",
       padding: 0,
       whiteSpace: "pre-wrap",
@@ -130,7 +132,11 @@ const styles = {
     maxHeight: 400,
     width: "100%",
   },
-};
+  backdrop: {
+    zIndex: theme.zIndex.drawer + 1,
+    color: '#fff',
+  }
+});
 class Messenger extends React.Component {
   observable;
   constructor(props, context) {
@@ -138,6 +144,7 @@ class Messenger extends React.Component {
     this.state = {
       ShowEmojis: false,
       isTyping: false,
+      fileEditorOptions: {isOpen: false}
     };
     const {socket, user} = context;
     const {updateFriendsPosition, friends, friendData} = this.props
@@ -152,7 +159,8 @@ class Messenger extends React.Component {
           data = {
             user: user,
             message: messageSubmit,
-            date: new Date(),
+            type: "text",
+            date: new Date().toISOString(),
           };
         valInput.value = "";
         updateFriendsPosition()
@@ -161,7 +169,7 @@ class Messenger extends React.Component {
           this.observable.subscribe();
         }) 
 
-        socket.emit("sendMessage", JSON.stringify(data));
+        socket.emit("sendMessage", data);
         const chatBox = document.querySelector("#mensajes");
         chatBox.scrollTop = chatBox.scrollHeight;
       }
@@ -194,7 +202,6 @@ class Messenger extends React.Component {
       if (document.querySelector("#message").value != "") {
         this.setState({ isTyping: true });
         socket.emit("typing");
-        console.log("typing");
         setTimeout(this.NoTypInterval, 5000);
       }
     };
@@ -216,9 +223,6 @@ class Messenger extends React.Component {
       const inputMessage = document.querySelector("#message")
       const inputValue = inputMessage.value
       const positionCursor = inputMessage.selectionStart
-      console.log("=====Position cursor======")
-      console.log(positionCursor)
-      console.log("==========================")
       const newMessage = 
       inputValue.slice(0, positionCursor) + 
       chosenEmoji.emoji + 
@@ -227,6 +231,50 @@ class Messenger extends React.Component {
       inputMessage.value = newMessage
       this.TyperHandler()
     };
+    this.readFileAsBuffer = (file) => {
+      return new Promise((resolve, reject) => {
+        const fileBuffer = new FileReader()
+        fileBuffer.onload = () => {
+          resolve(fileBuffer.result)
+        }
+        fileBuffer.readAsArrayBuffer(file)
+      })
+    }
+    this.handleUploadImage = async (event) => {
+      const file = event.target.files[0]
+      if(!file) 
+        return;
+      const size = parseFloat(file.size / (1024 * 1024)).toFixed(2);
+      if(size > 5) 
+        return alert("The image is over 5MB!");
+      const fileReader = new FileReader();
+      const fileReaderBuffer = await this.readFileAsBuffer(file)
+      fileReader.readAsDataURL(file)
+      fileReader.onload = () => {
+        this.setState({
+          fileEditorOptions: {
+            isOpen: true, 
+            friendName: this.props.friendData.nickname,
+            name:file.name, 
+            url: fileReader.result,
+            buffer: fileReaderBuffer
+          }
+        })
+     }
+ 
+    }
+    this.saveFile = () => {
+      const {fileEditorOptions} = this.state
+      const chatBox = document.querySelector("#mensajes");
+      socket.emit("sendMessageFile", fileEditorOptions.buffer)
+      this.props.updateNewMessage({
+        user: user,
+        type: "file",
+        message: fileEditorOptions.url
+      })
+      this.setState({fileEditorOptions: {isOpen: false}})
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
   }
   componentDidMount() {
     this.observable = new Observable(subscriber => {
@@ -244,8 +292,19 @@ class Messenger extends React.Component {
   }
   render() {
     const { classes, friendData, messagesChat} = this.props;
+    const {fileEditorOptions} = this.state
     return (
       <React.Fragment>
+        <Backdrop className={classes.backdrop} open={fileEditorOptions.isOpen}>
+          {fileEditorOptions.isOpen ? 
+            <FileEditor 
+              fileEditorOptions={fileEditorOptions} 
+              cancelFile={() => this.setState({fileEditorOptions: {isOpen: false}})}
+              saveFile={this.saveFile}
+            /> 
+            : undefined
+          }
+        </Backdrop>
         <div className={classes.channel}>
           <Typography variant="h6">{friendData.nickname}</Typography>
           <IconButton
@@ -268,7 +327,18 @@ class Messenger extends React.Component {
                   <img src={defaultAv} width="24" height="24" />
                   {e.user}
                 </li>
-                <li className={classes.liMensajes}>{e.message}</li>
+                <li className={classes.liMensajes}>
+                  {e.type === "file" ? 
+                    <img src={e.message} style={{
+                      width: "auto",
+                      height: "300px",
+                      maxWidth: "500px",
+                      maxHeight: "500px",
+                      backgroundSize: "contain",
+                      borderRadius: "unset"                 
+                    }}/>
+                  : e.message}
+                </li>
               </React.Fragment>
             ))}
           </ul>
@@ -296,7 +366,13 @@ class Messenger extends React.Component {
                     this.setState({ ShowEmojis: true })
                 )}>
                   <InsertEmoticonIcon style={{ color: "#828689" }} />
-                </IconButton>
+                </IconButton>        
+                  <input type="file" accept="image/*" style={{ display:"none"}} onChange={this.handleUploadImage} id={"imageSelector"}/>
+                  <label htmlFor={"imageSelector"} >
+                    <IconButton component="span">
+                      <AttachFileIcon style={{ color: "#828689" }} />
+                    </IconButton>
+                  </label>
                 <TextField
                   type="text"
                   id={"message"}

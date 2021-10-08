@@ -1,4 +1,4 @@
-import {Logger, UseGuards} from '@nestjs/common'
+import {Logger, UseGuards, UsePipes} from '@nestjs/common'
 import {
   MessageBody,
   ConnectedSocket,
@@ -19,6 +19,9 @@ import {Notify, UserStatus} from './events.interface'
 import { Chat } from './../entities/chat.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, createQueryBuilder, Brackets} from 'typeorm';
+import { ValidationPipe } from './../share/validationSocket.pipe'
+import {messageValidator} from './dto/events.dto'
+import * as fs from "fs";
 
 @UseGuards(SocketGuard)
 @WebSocketGateway({namespace: "chat"})
@@ -32,7 +35,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   ){}
   updateFriendsPosition (idFriend: any, client: Socket) {
     const id = client.data.id;
-    this.redis.get(`friendsPositio:${idFriend}`, (err, data) => {
+    this.redis.get(`friendsPosition:${idFriend}`, (err, data) => {
     if (err) return console.error(err);
     if (JSON.stringify(data) === "null") 
         return this.redis.set(`friendsPosition:${idFriend}`, JSON.stringify([{ id: id }]));
@@ -42,7 +45,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       if (posFriends !== -1) {
         newFriends.splice(posFriends, 1);
         newFriends.unshift(friends[posFriends]);
-        return this.redis.set(`friendsPosition:${idFriend}`, JSON.stringify(newFriends));
+        this.redis.set(`friendsPosition:${idFriend}`, JSON.stringify(newFriends));
       } 
         newFriends.unshift({ id: id });
         this.redis.set(`friendsPosition:${idFriend}`, JSON.stringify(newFriends));
@@ -57,9 +60,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   async handleConnection(@ConnectedSocket() client: Socket): Promise<any> {
     const token = client.handshake.headers['cookie']
     const user: any = await this.eventsService.verifyToken(token)
-    if(!user){
-      return client.disconnect();
-    }
+    if(!user) return client.disconnect();
       this.redis
       .pipeline()
       .set(`status:${user.id}`, "online")
@@ -107,8 +108,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       this.redis.get(`infoUser:${id}`, (err, data) => {
         if (err) 
           return console.log(err);
-        if(!data)
-          return;
+        if(!data) return;
         const json = JSON.parse(data);
         this.server.to(`${json.socketID}`).emit("updateRemoteService");
       });
@@ -133,10 +133,43 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
      })
   }
   @SubscribeMessage("leaveRoom")
-  async leaveRoom( @ConnectedSocket() client: Socket): Promise<any>{
+  async leaveRoom(@ConnectedSocket() client: Socket): Promise<any>{
     const localData = JSON.parse(await this.redis.get(`localData:${client.data.id}`))
     if (localData) 
       client.leave(localData.room);
+  }
+  @SubscribeMessage("sendMessageFile")
+  async sendMessageFile(@MessageBody() file: Buffer, @ConnectedSocket() client: Socket): Promise<any>{
+    const localData = JSON.parse(await this.redis.get(`localData:${client.data.id}`))
+    if(localData){
+      const path = `/home/qxth/Desktop/Practice/imagesMessenger/${localData.room}`
+      if(!fs.existsSync(path))
+        fs.mkdirSync(path);
+      const lengthFile: number= file.byteLength
+      const sizeCalc: string = (lengthFile / (1024 * 1024)).toFixed(2)
+      const sizeTotal: number = parseFloat(sizeCalc)
+      if(sizeTotal > 5) 
+        return;
+      const numPhotos = fs.readdirSync(path).length
+      fs.writeFileSync(`${path}/${numPhotos+1}.png`, file);
+      const data = {
+        user: client.data.nickname,
+        message: `${localData.room}/${numPhotos+1}.png`,
+        type: "file",
+        date: new Date().toISOString(),
+      } 
+      const msg = `,${JSON.stringify(data)}]}`
+      await this.chatRepository
+      .createQueryBuilder("ChatStorage")
+      .update(Chat)
+      .set({
+        ChatData: () => 'concat(substring_index(ChatData, "]", 1), :chatData)'
+      })
+      .setParameter("chatData", msg)
+      .where({idChat: localData.room})
+      .execute()
+    }
+
   }
   @SubscribeMessage("sendNotify")
   async sendNotify(@ConnectedSocket() client: Socket): Promise<any>{
@@ -193,9 +226,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       });
   }
   @SubscribeMessage("sendMessage")
-  async sendMessage(@MessageBody() data: any, @ConnectedSocket() client: Socket): Promise<any>{
+  @UsePipes(new ValidationPipe())
+  async sendMessage(@MessageBody() data: messageValidator, @ConnectedSocket() client: Socket): Promise<any>{
     const localData = JSON.parse(await this.redis.get(`localData:${client.data.id}`))
-    const msg = `,${data}]}` 
+    const msg = `,${JSON.stringify(data)}]}` 
     await this.chatRepository
     .createQueryBuilder("ChatStorage")
     .update(Chat)
@@ -205,11 +239,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     .setParameter("chatData", msg)
     .where({idChat: localData.room})
     .execute()
-    this.server.to(localData.room).emit("sendMessage", JSON.parse(data))
+    this.server.to(localData.room).emit("sendMessage", data)
   }
   @SubscribeMessage("updatePositionFriends")
   updatePositionFriends(@MessageBody() friends: any, @ConnectedSocket() client: Socket){
-    console.log("data updatePositionFriends", friends)
     this.redis
     .pipeline()
     .set(`friendsPosition:${client.data.id}`, JSON.stringify(friends))
@@ -219,7 +252,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     });
   }
   @SubscribeMessage("getPositionFriends")
-  requireLastUpdate(@ConnectedSocket()client: Socket): any{
+  requireLastUpdate(@ConnectedSocket() client: Socket): any{
    this.redis.get(`friendsPosition:${client.data.id}`, (err, data) => {
       if (err) return console.error(err);
       client.emit("getPositionFriends", data);
@@ -239,6 +272,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.redis
       .pipeline()
       .set(`status:${client.data.id}`, "offline")
+      .del(`localData:${client.data.id}`)
       .exec((err, res) => {
         if (err) return console.log(err);
       });

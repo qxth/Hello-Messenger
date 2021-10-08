@@ -10,6 +10,7 @@ const routes = {
   rejectFriends: `${api}rejectfriends`,
   verificarToken: `${api}verificarToken`,
   getQuestions: `${api}questions`,
+  getFileMessage: `${api}getfile`
 };
 
 export default routes;

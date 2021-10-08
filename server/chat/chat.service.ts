@@ -1,4 +1,4 @@
-import { Injectable, HttpStatus} from '@nestjs/common';
+import { Injectable, HttpStatus, StreamableFile } from '@nestjs/common';
 import { HttpException } from '@nestjs/common/exceptions/http.exception';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, createQueryBuilder, Brackets} from 'typeorm';
@@ -7,6 +7,7 @@ import { Chat } from './../entities/chat.entity';
 import {Friends} from './../entities/friends.entity'
 import {StashFriends} from './../entities/stashFriends.entity';
 import {User} from './../entities/user.entity'
+import * as fs from "fs";
 
 @Injectable()
 export class ChatService {
@@ -20,6 +21,34 @@ export class ChatService {
     	@InjectRepository(User)
     	private userRepository: Repository<User>
     ){}
+    async getFileMessage(req: Request, res: Response, data: any): Promise<any>{
+    	const rows = await this.chatRepository.createQueryBuilder("ChatStorage")
+    	.select(['idChat'])
+    	.where({idChat: data.idChat})
+    	.andWhere({idUser: req.user.id})
+    	.orWhere(new Brackets(qb => {
+    		qb.where({idChat: data.idChat})
+    		.andWhere({idFriend: req.user.id})
+    	}))
+    	.getRawMany()
+    	if(rows.length <= 0)
+    		throw new HttpException({
+		       	status:  HttpStatus.FORBIDDEN, 
+		       	message: 'FORBIDDEN'
+	       }, HttpStatus.FORBIDDEN);
+		const path = `/home/qxth/Desktop/Practice/imagesMessenger/${data.idChat}/${data.idImage}`
+		fs.readFile(path, (err, data) => {
+			if(err) 
+				return res.status(HttpStatus.NOT_FOUND).json({
+					status: HttpStatus.NOT_FOUND, 
+					message: "NOT FOUND IMAGE" 
+				})
+			res.set(
+				{ "Content-Type": "image/png", Accept: "image/*" }
+			)
+			return res.status(HttpStatus.OK).send(data)
+		})
+    }
 	async getAllHistory (req: Request, res: Response): Promise<any>{
 		const id  = req.user.id
 		const friendId = req.body.id
@@ -32,7 +61,6 @@ export class ChatService {
 			.andWhere({idUser: friendId})
 		}))
 		.getRawMany()
-		console.log(rows)
 	    if(rows.length < 0)
 	       throw new HttpException({
 	       	status:  HttpStatus.BAD_REQUEST, 
@@ -63,11 +91,11 @@ export class ChatService {
 	async getStashFriends(req: Request, res: Response): Promise<any>{
 		console.log(req.user)
 		const rows = await this.stashFriendsRepository
-		.createQueryBuilder("stashFriends")
-		.innerJoin('stashFriends.user', 'user')
+		.createQueryBuilder("StashFriends")
+		.innerJoin('StashFriends.user', 'user')
 		.select(['user.id', 'user.nickname'])
 		.where({idFriend: req.user.id})
-		.orderBy('stashFriends.idStash', 'ASC')
+		.orderBy('StashFriends.idStash', 'ASC')
 		.getRawMany()
 		return res.status(HttpStatus.OK).json({
 			status: 200,
@@ -80,13 +108,13 @@ export class ChatService {
 	    .select(['id', 'nickname'])
 	    .where({nickname: req.body.nickname})
 	    .getRawMany();
-	    if(user.length > 0 && id === user[0].id)
+	    if(user.length < 1 || id === user[0].id)
 			throw new HttpException({
 				status:  HttpStatus.BAD_REQUEST, 
 				message: 'User not found!' 
 			}, HttpStatus.BAD_REQUEST);
     	const stash = await this.stashFriendsRepository
-    	.createQueryBuilder("stashFriends")
+    	.createQueryBuilder("StashFriends")
     	.select(['id', 'idFriend'])
 		.where({idFriend: id})
 		.andWhere({id: user[0].id})
@@ -126,7 +154,7 @@ export class ChatService {
 	    const id = req.user.id;	
 	    const idFriend = req.body.idFriend    
     	const stashUser = await this.stashFriendsRepository
-    	.createQueryBuilder("stashFriends")
+    	.createQueryBuilder("StashFriends")
     	.select(['id', 'idFriend'])
 		.where({idFriend: id})
 		.andWhere({id: idFriend})
@@ -158,7 +186,7 @@ export class ChatService {
 		await this.chatRepository.save(chatUser)
 
 		const stash = await this.stashFriendsRepository
-		.createQueryBuilder("stashFriends")
+		.createQueryBuilder("StashFriends")
 		.delete()
 		.where({idFriend: id})
 		.andWhere({id: idFriend})
@@ -170,7 +198,7 @@ export class ChatService {
 	}
 	async rejectFriends (req: Request, res: Response): Promise<any>{
 		const stash = await this.stashFriendsRepository
-		.createQueryBuilder("stashFriends")
+		.createQueryBuilder("StashFriends")
 		.delete()
 		.from(StashFriends)
 		.where({idFriend: req.user.id})

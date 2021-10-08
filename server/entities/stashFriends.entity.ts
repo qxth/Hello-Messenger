@@ -4,15 +4,15 @@ import {
 } from 'typeorm';
 import {User} from './user.entity' 
 
-@Entity("stashFriends")
+@Entity("StashFriends")
 export class StashFriends {
   @PrimaryGeneratedColumn()
   idStash: number;
 
-  @Column({type: "int", unique: true})
+  @Column("int")
   id: number;
 
-  @Column({type: "int", unique: true})
+  @Column("int")
   idFriend: number;
 
   @ManyToOne(() => User, user => user.stashFriends, {eager: true})

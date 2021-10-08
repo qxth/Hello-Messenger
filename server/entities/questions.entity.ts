@@ -3,7 +3,7 @@ import {
 } from 'typeorm';
 
 
-@Entity("questions")
+@Entity("Questions")
 export class Questions {
 	@PrimaryGeneratedColumn()
 	id: number;

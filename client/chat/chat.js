@@ -6,9 +6,9 @@ import {
   TextField, Container, Typography,
   List, ListItem, ListItemText,
   AppBar, InputAdornment, IconButton,
-  Divider, Menu, MenuItem,
-  Fade, Link,
+  Menu, MenuItem, Link
 } from "@material-ui/core";
+//import Backdrop from '@mui/material/Backdrop';
 import { withStyles } from "@material-ui/core/styles";
 
 //#Material UI/Icons
@@ -176,9 +176,9 @@ class Chat extends React.Component {
       });
     };
     this.updateNewMessage = (msg) => {
-      this.setState({messagesChat: [...this.state.messagesChat, {user: msg.user, message: msg.message}]})
+      this.setState({messagesChat: [...this.state.messagesChat, {user: msg.user, type: msg.type, message: msg.message}]})
     }
-    this.getMessages = (e) => {
+    this.getMessages = async (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
         name = e.target.getAttribute("name");
       if (e.target.getAttribute("aria-selected") === "false") {
@@ -196,17 +196,16 @@ class Chat extends React.Component {
             nickname: `${friendData[0].name}`
           } 
         });
-        fetch(routesApi.getChat, {
+        const fetchData = await fetch(routesApi.getChat, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ id: friendData[0].id }),
         })
-          .then((res) => res.json())
-          .then((data) => {
+        const dataMessages = await fetchData.json()
             socket.emit("createRoom", {
-              room: data.idChat,
+              room: dataMessages.idChat,
               id: friendData[0].id,
             });
             const newFriends = Array.from(this.state.friends);
@@ -216,22 +215,31 @@ class Chat extends React.Component {
               notify: 0,
             };
             document.getElementById(`${friendData[0].id}`).style.opacity = "0";
-            if (data.status === 400) 
+            if (!fetchData.ok) 
               return;
             this.setState({
               friends: newFriends
             });            
-            const messages = data.dataChat[0].ChatData;
+            const messages = dataMessages.dataChat[0].ChatData;
             messages.shift();
-            this.setState({
-              messagesChat: messages,
-              friends: newFriends,
-            });
-            const chatBox = document.querySelector("#boxMensajes");
-            if (chatBox.scrollHeight) {
-              chatBox.scrollTop = chatBox.scrollHeight;
-            }
-          });
+            console.log(messages)
+            messages.forEach((infoChat, i) => {
+              if(infoChat.type === "file")
+                fetch(`${routesApi.getFileMessage}/${infoChat.message}`, 
+                ).then(response => response.blob())
+              .then(imageBlob => {
+                 const imageObjectURL = URL.createObjectURL(imageBlob);
+                 messages[i].message = imageObjectURL
+                  this.setState({
+                    messagesChat: messages,
+                    friends: newFriends,
+                  });
+                  const chatBox = document.querySelector("#boxMensajes");
+                  if (chatBox.scrollHeight)
+                  chatBox.scrollTop = chatBox.scrollHeight;
+              })
+
+            })
       }
     };
     this.sendNotify = () => {

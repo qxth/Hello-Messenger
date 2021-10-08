@@ -41,9 +41,7 @@ export class AppModule implements NestModule{
       .apply(
       class clientLogger implements NestMiddleware {
   			use(req: Request, res: Response, next: NextFunction) {
-      		const routesApi = Object.values(routes)
-      		.findIndex(e => e === req.originalUrl)
-      		if(routesApi <= -1)
+      		if(req.originalUrl.split("/")[1] !== "chatter")
       			return res.status(200).send(template());
 		    	next();
   			}

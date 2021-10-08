@@ -21,7 +21,7 @@ export class User {
   @Column({default: 1})
   pregunta: number;
 
-  @Column({length: 100, default: ""})
+  @Column({length: 100})
   respuesta: string;
 
   @BeforeInsert()
