@@ -265,16 +265,19 @@ class Messenger extends React.Component {
     }
     this.saveFile = () => {
       const {fileEditorOptions} = this.state
-      const chatBox = document.querySelector("#mensajes");
-      socket.emit("sendMessageFile", fileEditorOptions.buffer)
-      this.props.updateNewMessage({
-        user: user,
-        type: "file",
-        message: fileEditorOptions.url
-      })
+      updateFriendsPosition()
+      .then(newFriendsPosition => {
+        socket.emit("updatePositionFriends", newFriendsPosition)
+        this.observable.subscribe();
+      }) 
+      socket.emit("sendMessageFile", {buffer: fileEditorOptions.buffer, url: fileEditorOptions.url})
       this.setState({fileEditorOptions: {isOpen: false}})
-      chatBox.scrollTop = chatBox.scrollHeight;
     }
+    socket.on("sendMessageFile", (msg) => {
+      this.props.updateNewMessage(msg)
+      const chatBox = document.querySelector("#boxMensajes");
+      chatBox.scrollTop = chatBox.scrollHeight;
+    })
   }
   componentDidMount() {
     this.observable = new Observable(subscriber => {

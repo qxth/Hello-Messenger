@@ -139,19 +139,20 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       client.leave(localData.room);
   }
   @SubscribeMessage("sendMessageFile")
-  async sendMessageFile(@MessageBody() file: Buffer, @ConnectedSocket() client: Socket): Promise<any>{
+  async sendMessageFile(@MessageBody() fileData: any, @ConnectedSocket() client: Socket): Promise<any>{
     const localData = JSON.parse(await this.redis.get(`localData:${client.data.id}`))
     if(localData){
+      const buffer = fileData.buffer
       const path = `/home/qxth/Desktop/Practice/imagesMessenger/${localData.room}`
       if(!fs.existsSync(path))
         fs.mkdirSync(path);
-      const lengthFile: number= file.byteLength
+      const lengthFile: number= buffer.byteLength
       const sizeCalc: string = (lengthFile / (1024 * 1024)).toFixed(2)
       const sizeTotal: number = parseFloat(sizeCalc)
       if(sizeTotal > 5) 
         return;
       const numPhotos = fs.readdirSync(path).length
-      fs.writeFileSync(`${path}/${numPhotos+1}.png`, file);
+      fs.writeFileSync(`${path}/${numPhotos+1}.png`, buffer);
       const data = {
         user: client.data.nickname,
         message: `${localData.room}/${numPhotos+1}.png`,
@@ -168,6 +169,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       .setParameter("chatData", msg)
       .where({idChat: localData.room})
       .execute()
+      this.server.to(localData.room).emit("sendMessageFile", {
+        user: client.data.nickname,
+        message: fileData.url,
+        type: "file",
+        date: new Date().toISOString()
+      })
     }
 
   }

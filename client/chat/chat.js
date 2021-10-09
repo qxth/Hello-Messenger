@@ -176,7 +176,14 @@ class Chat extends React.Component {
       });
     };
     this.updateNewMessage = (msg) => {
-      this.setState({messagesChat: [...this.state.messagesChat, {user: msg.user, type: msg.type, message: msg.message}]})
+      this.setState({
+        messagesChat: [
+          ...this.state.messagesChat, {
+            user: msg.user, type: msg.type, 
+            message: msg.message, date: msg.date
+          }
+        ]
+      })
     }
     this.getMessages = async (e) => {
       const role = document.querySelectorAll('[aria-selected="true"]'),
