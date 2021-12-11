@@ -280,6 +280,7 @@ class Messenger extends React.Component {
     })
   }
   componentDidMount() {
+    console.log(this.props)
     this.observable = new Observable(subscriber => {
       subscriber.next(this.props.sendNotify())
       subscriber.complete();

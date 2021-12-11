@@ -7,6 +7,7 @@ import { Chat } from './../entities/chat.entity';
 import {Friends} from './../entities/friends.entity'
 import {StashFriends} from './../entities/stashFriends.entity';
 import {User} from './../entities/user.entity'
+import paths from './../../secret/paths'
 import * as fs from "fs";
 
 @Injectable()
@@ -36,7 +37,7 @@ export class ChatService {
 		       	status:  HttpStatus.FORBIDDEN, 
 		       	message: 'FORBIDDEN'
 	       }, HttpStatus.FORBIDDEN);
-		const path = `/home/qxth/Desktop/Practice/imagesMessenger/${data.idChat}/${data.idImage}`
+		const path = `${paths.imagesPath}/${data.idChat}/${data.idImage}`
 		fs.readFile(path, (err, data) => {
 			if(err) 
 				return res.status(HttpStatus.NOT_FOUND).json({

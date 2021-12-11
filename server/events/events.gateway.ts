@@ -21,6 +21,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, createQueryBuilder, Brackets} from 'typeorm';
 import { ValidationPipe } from './../share/validationSocket.pipe'
 import {messageValidator} from './dto/events.dto'
+import paths from './../../secret/paths'
 import * as fs from "fs";
 
 @UseGuards(SocketGuard)
@@ -143,7 +144,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     const localData = JSON.parse(await this.redis.get(`localData:${client.data.id}`))
     if(localData){
       const buffer = fileData.buffer
-      const path = `/home/qxth/Desktop/Practice/imagesMessenger/${localData.room}`
+      const path = `${paths.imagesPath}/${localData.room}`
       if(!fs.existsSync(path))
         fs.mkdirSync(path);
       const lengthFile: number= buffer.byteLength

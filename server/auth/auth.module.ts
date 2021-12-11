@@ -7,14 +7,14 @@ import {LocalStrategy} from './passport.auth'
 import {JwtStrategy} from './jwt.auth'
 import {PassportModule} from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import keys from "./../../secret/keys";
+import secretKeys from "./../../secret/keys";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     PassportModule,
     JwtModule.register({
-      secret: keys.tokenKey
+      secret: secretKeys.tokenKey
     }),
   ],
   controllers: [AuthController],

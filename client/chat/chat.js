@@ -229,24 +229,27 @@ class Chat extends React.Component {
             });            
             const messages = dataMessages.dataChat[0].ChatData;
             messages.shift();
-            console.log(messages)
-            messages.forEach((infoChat, i) => {
-              if(infoChat.type === "file")
-                fetch(`${routesApi.getFileMessage}/${infoChat.message}`, 
+            messages.forEach((infoMessage, i) => {
+              console.log(infoMessage.type)
+              if(infoMessage.type === "file")
+                fetch(`${routesApi.getFileMessage}/${infoMessage.message}`, 
                 ).then(response => response.blob())
               .then(imageBlob => {
                  const imageObjectURL = URL.createObjectURL(imageBlob);
                  messages[i].message = imageObjectURL
+                  const chatBox = document.querySelector("#boxMensajes");
+                  if (chatBox.scrollHeight)
+                  chatBox.scrollTop = chatBox.scrollHeight;
                   this.setState({
                     messagesChat: messages,
                     friends: newFriends,
                   });
-                  const chatBox = document.querySelector("#boxMensajes");
-                  if (chatBox.scrollHeight)
-                  chatBox.scrollTop = chatBox.scrollHeight;
               })
-
-            })
+              this.setState({
+                messagesChat: messages,
+                friends: newFriends,
+              });
+            });
       }
     };
     this.sendNotify = () => {
